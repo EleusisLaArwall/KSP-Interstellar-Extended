@@ -6,7 +6,7 @@ namespace FNPlugin
     class ModuleStorageCryostat: FNModuleCryostat {}
 
     [KSPModule("Cryostat")]
-    class FNModuleCryostat : FNResourceSuppliableModule
+    class FNModuleCryostat : ResourceSuppliableModule
     {
         // Persistant
         [KSPField(isPersistant = true, guiActive = true, guiName = "Cooling"), UI_Toggle(disabledText = "On", enabledText = "Off")]
@@ -56,9 +56,6 @@ namespace FNPlugin
         [KSPField(isPersistant = false, guiActive = false, guiName = "internal boiloff")]
         public double boiloff;
 
-        private PartResource _electricCharge_resource;
-        private PartResource _cryostat_resource;
-
         private BaseField isDisabledField;
         private BaseField boiloffStrField;
         private BaseField powerStatusStrField;
@@ -99,14 +96,12 @@ namespace FNPlugin
                 node.AddValue("maxAmount", powerReqKW > 0 ? powerReqKW / 50 : 1);
                 node.AddValue("amount", powerReqKW > 0  ? powerReqKW / 50 : 1);
                 part.AddResource(node);
-            }
-
-            // store reference to local electric charge buffer
-            _electricCharge_resource = part.Resources[InterstellarResourcesConfiguration.Instance.ElectricCharge];
+            }            
         }
 
         private void UpdateElectricChargeBuffer(double currentPowerUsage)
         {
+            var _electricCharge_resource = part.Resources[InterstellarResourcesConfiguration.Instance.ElectricCharge];
             if (_electricCharge_resource != null && (TimeWarp.fixedDeltaTime != previousDeltaTime || previousPowerUsage != currentPowerUsage))
             {
                 var requiredCapacity = 2 * currentPowerUsage * TimeWarp.fixedDeltaTime;
@@ -122,9 +117,9 @@ namespace FNPlugin
 
         public void Update()
         {
-            _cryostat_resource = part.Resources[resourceName];
+            var cryostat_resource = part.Resources[resourceName];
 
-            if (_cryostat_resource != null)
+            if (cryostat_resource != null)
             {
                 if (HighLogic.LoadedSceneIsEditor)
                 {
@@ -134,7 +129,7 @@ namespace FNPlugin
 
                 isDisabledField.guiActive = true;
 
-                bool coolingIsRelevant = _cryostat_resource.amount > 0.0000001 && (boilOffRate > 0 || requiresPower);
+                bool coolingIsRelevant = cryostat_resource.amount > 0.0000001 && (boilOffRate > 0 || requiresPower);
 
                 powerStatusStrField.guiActive = showPower && requiresPower;
                 boiloffStrField.guiActive = showBoiloff && boiloff > 0.00001;
@@ -191,7 +186,8 @@ namespace FNPlugin
         // FixedUpdate is also called while not staged
         public void FixedUpdate()
         {
-            if (_cryostat_resource == null || double.IsPositiveInfinity(currentPowerReq))
+            var cryostat_resource = part.Resources[resourceName];
+            if (cryostat_resource == null || double.IsPositiveInfinity(currentPowerReq))
             {
                 boiloff = 0;
                 return;
@@ -216,13 +212,13 @@ namespace FNPlugin
 
                 var fixedRecievedChargeKW = CheatOptions.InfiniteElectricity 
                     ? fixedPowerReqKW
-                    : consumeFNResource(fixedPowerReqKW / 1000, FNResourceManager.FNRESOURCE_MEGAJOULES) * 1000;
+                    : consumeFNResource(fixedPowerReqKW / 1000, ResourceManager.FNRESOURCE_MEGAJOULES) * 1000;
 
                 if (fixedRecievedChargeKW <= fixedPowerReqKW)
-                    fixedRecievedChargeKW += part.RequestResource(FNResourceManager.FNRESOURCE_MEGAJOULES, (fixedPowerReqKW - fixedRecievedChargeKW) / 1000) * 1000;
+                    fixedRecievedChargeKW += part.RequestResource(ResourceManager.FNRESOURCE_MEGAJOULES, (fixedPowerReqKW - fixedRecievedChargeKW) / 1000) * 1000;
 
                 if (currentPowerReq < 1000 && fixedRecievedChargeKW <= fixedPowerReqKW)
-                    fixedRecievedChargeKW += part.RequestResource(FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, fixedPowerReqKW - fixedRecievedChargeKW);
+                    fixedRecievedChargeKW += part.RequestResource(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, fixedPowerReqKW - fixedRecievedChargeKW);
 
                 recievedPowerKW = fixedRecievedChargeKW / TimeWarp.fixedDeltaTime;
             }
@@ -237,8 +233,8 @@ namespace FNPlugin
 
             if (boiloff > 0.0000000001)
             {
-                _cryostat_resource.amount = Math.Max(0, _cryostat_resource.amount - boiloff * TimeWarp.fixedDeltaTime);
-                boiloffStr = boiloff.ToString("0.0000000") + " L/s " + _cryostat_resource.resourceName;
+                cryostat_resource.amount = Math.Max(0, cryostat_resource.amount - boiloff * TimeWarp.fixedDeltaTime);
+                boiloffStr = boiloff.ToString("0.0000000") + " L/s " + cryostat_resource.resourceName;
 
                 if (hasExtraBoiloff && part.vessel.isActiveVessel && !warningShown)
                 {
@@ -249,7 +245,7 @@ namespace FNPlugin
             else
             {
                 warningShown = false;
-                boiloffStr = "0.0000000 L/s " + _cryostat_resource.resourceName;
+                boiloffStr = "0.0000000 L/s " + cryostat_resource.resourceName;
             }
 
             previousPowerReq = currentPowerReq;

@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using FNPlugin.Extensions;
 
 namespace FNPlugin 
 {
-    class ElectricRCSController : FNResourceSuppliableModule 
+    class ElectricRCSController : ResourceSuppliableModule 
     {
         [KSPField(isPersistant = true)]
         bool isInitialised = false;
@@ -164,8 +165,7 @@ namespace FNPlugin
             if (HighLogic.LoadedSceneIsFlight)
             {
                 // you can have any fuel you want in the editor but not in flight
-                List<PartResource> totalpartresources = part.GetConnectedResources(new_propellant.name).ToList();
-
+                var totalpartresources = part.GetConnectedResources(new_propellant.name).ToList();
                 if (!totalpartresources.Any() && maxSwitching > 0)
                 {
                     SwitchPropellant(moveNext, --maxSwitching);
@@ -280,15 +280,15 @@ namespace FNPlugin
         {
             powerEnabled = !powerEnabled;
 
-            power_recieved_f = powerEnabled ? CheatOptions.InfiniteElectricity ? 1 : consumeFNResource(0.1, FNResourceManager.FNRESOURCE_MEGAJOULES) : 0;
-            hasSufficientPower = power_recieved_f > 0.01;
+            power_recieved_f = powerEnabled ? CheatOptions.InfiniteElectricity ? 1 : consumeFNResourcePerSecond(0.1, ResourceManager.FNRESOURCE_MEGAJOULES) : 0;
+            hasSufficientPower = power_recieved_f >= 0.09;
             SetupPropellants();
             currentThrustMultiplier = hasSufficientPower ? Current_propellant.ThrustMultiplier : Current_propellant.ThrustMultiplierCold;
         }
 
         public override void OnStart(PartModule.StartState state) 
         {
-            definitionMegajoule = PartResourceLibrary.Instance.GetDefinition(FNResourceManager.FNRESOURCE_MEGAJOULES);
+            definitionMegajoule = PartResourceLibrary.Instance.GetDefinition(ResourceManager.FNRESOURCE_MEGAJOULES);
 
             try
             {
@@ -331,7 +331,7 @@ namespace FNPlugin
                 if (String.IsNullOrEmpty(displayName))
                     displayName = part.partInfo.title;
 
-                String[] resources_to_supply = { FNResourceManager.FNRESOURCE_WASTEHEAT };
+                String[] resources_to_supply = { ResourceManager.FNRESOURCE_WASTEHEAT };
                 this.resources_to_supply = resources_to_supply;
 
                 oldThrustLimiter = thrustLimiter;
@@ -404,8 +404,8 @@ namespace FNPlugin
             if (delayedVerificationPropellant)
             {
                 // test is we got any megajoules
-                power_recieved_f = CheatOptions.InfiniteElectricity ? 1 : consumeFNResource(powerMult, FNResourceManager.FNRESOURCE_MEGAJOULES);
-                hasSufficientPower = power_recieved_f > powerMult / 10;
+                power_recieved_f = CheatOptions.InfiniteElectricity ? 1 : consumeFNResourcePerSecond(powerMult, ResourceManager.FNRESOURCE_MEGAJOULES);
+                hasSufficientPower = power_recieved_f > powerMult * 0.99;
 
                 // return test power
                 if (!CheatOptions.InfiniteElectricity && power_recieved_f > 0)
@@ -480,17 +480,17 @@ namespace FNPlugin
                     power_recieved_f = power_requested_f;
                 else
                 {
-	                var avaialablePower = getAvailableResourceSupply(FNResourceManager.FNRESOURCE_MEGAJOULES);
-					power_recieved_f = avaialablePower >= power_requested_f 
-						? consumeFNResourcePerSecond(power_requested_f, FNResourceManager.FNRESOURCE_MEGAJOULES) 
-						: 0;
+                    var avaialablePower = getAvailableResourceSupply(ResourceManager.FNRESOURCE_MEGAJOULES);
+                    power_recieved_f = avaialablePower >= power_requested_f 
+                        ? consumeFNResourcePerSecond(power_requested_f, ResourceManager.FNRESOURCE_MEGAJOULES) 
+                        : 0;
                 }
 
                 double heat_to_produce = power_recieved_f * (1 - efficiency);
 
                 heat_production_f = CheatOptions.IgnoreMaxTemperature 
                     ? heat_to_produce
-                    : supplyFNResourcePerSecond(heat_to_produce, FNResourceManager.FNRESOURCE_WASTEHEAT);
+                    : supplyFNResourcePerSecond(heat_to_produce, ResourceManager.FNRESOURCE_WASTEHEAT);
 
                 power_ratio = power_requested_f > 0 ? Math.Min(power_recieved_f / power_requested_f, 1.0) : 1;
             }

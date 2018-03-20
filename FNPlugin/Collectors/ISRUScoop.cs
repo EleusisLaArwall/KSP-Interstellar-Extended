@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Linq;
+using FNPlugin.Resources;
+using FNPlugin.Extensions;
 
 
 namespace FNPlugin 
 {
-    class ISRUScoop : FNResourceSuppliableModule 
+    class ISRUScoop : ResourceSuppliableModule 
     {
         // persistants
         [KSPField(isPersistant = true)]
@@ -208,20 +210,17 @@ namespace FNPlugin
             }
 
             // map ors resource to kspi resource
-            
             if (PluginHelper.OrsResourceMappings == null || !PluginHelper.OrsResourceMappings.TryGetValue(ors_atmospheric_resource_name, out resourceStoragename))
                 resourceStoragename = ors_atmospheric_resource_name;
             else if (!PartResourceLibrary.Instance.resourceDefinitions.Contains(resourceStoragename))
                 resourceStoragename = ors_atmospheric_resource_name;
 
-            //double resourcedensity = PartResourceLibrary.Instance.GetDefinition(PluginHelper.atomspheric_resources_tocollect[currentresource]).density;
             var definition = PartResourceLibrary.Instance.GetDefinition(resourceStoragename);
 
             if (definition == null)
                 return;
 
             double resourcedensity = definition.density;
-
             double maxAltitudeAtmosphere = PluginHelper.getMaxAtmosphericAltitude(vessel.mainBody);
             
             double upperAtmospherFraction = Math.Max(0, (vessel.altitude - maxAltitudeAtmosphere) / Math.Max(0.000001, maxAltitudeAtmosphere * PluginHelper.MaxAtmosphericAltitudeMult - maxAltitudeAtmosphere));
@@ -263,8 +262,8 @@ namespace FNPlugin
 
                 // calculate available power
                 double powerreceivedMW =  CheatOptions.InfiniteElectricity 
-                    ? powerRequest 
-                    : Math.Max(consumeFNResource(powerRequest, FNResourceManager.FNRESOURCE_MEGAJOULES), 0);
+                    ? powerRequest
+                    : Math.Max(consumeFNResource(powerRequest, ResourceManager.FNRESOURCE_MEGAJOULES, TimeWarp.fixedDeltaTime), 0);
 
                 double normalisedRevievedPowerMW = powerreceivedMW / TimeWarp.fixedDeltaTime;
 
@@ -272,7 +271,7 @@ namespace FNPlugin
                 if (powerrequirementsMW < 2 && normalisedRevievedPowerMW <= powerrequirementsMW)
                 {
                     var requiredKW = (powerrequirementsMW - normalisedRevievedPowerMW) * 1000;
-                    var recievedKW = part.RequestResource(FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, requiredKW * TimeWarp.fixedDeltaTime);
+                    var recievedKW = part.RequestResource(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, requiredKW * TimeWarp.fixedDeltaTime);
                     powerreceivedMW += (recievedKW / 1000);
                 }
 

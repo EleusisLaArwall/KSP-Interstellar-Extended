@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using FNPlugin.Resources;
+using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
@@ -55,71 +57,71 @@ namespace FNPlugin.Refinery
         [KSPField(isPersistant = true)]
         protected double _sodiumPercentage;
 
-        protected double _fixedConsumptionRate;
-        protected double _consumptionStorageRatio;
+        double _fixedConsumptionRate;
+        double _consumptionStorageRatio;
 
-        protected PartResourceDefinition _atmosphere;
+        PartResourceDefinition _atmosphere;
 
         // all the gases that it should be possible to collect from atmospheres
-        protected PartResourceDefinition _ammonia;
-        protected PartResourceDefinition _argon;
-        protected PartResourceDefinition _dioxide;
-        protected PartResourceDefinition _helium3;
-        protected PartResourceDefinition _helium4;
-        protected PartResourceDefinition _hydrogen;
-        protected PartResourceDefinition _methane;
-        protected PartResourceDefinition _monoxide;
-        protected PartResourceDefinition _neon;
-        protected PartResourceDefinition _nitrogen;
-        protected PartResourceDefinition _nitrogen15;
-        protected PartResourceDefinition _oxygen;
-        protected PartResourceDefinition _water; // water vapour can form a part of atmosphere as well
-        protected PartResourceDefinition _heavywater;
-        protected PartResourceDefinition _xenon;
-        protected PartResourceDefinition _deuterium;
-        protected PartResourceDefinition _krypton;
-        protected PartResourceDefinition _sodium;
+        PartResourceDefinition _ammonia;
+        PartResourceDefinition _argon;
+        PartResourceDefinition _dioxide;
+        PartResourceDefinition _helium3;
+        PartResourceDefinition _helium4;
+        PartResourceDefinition _hydrogen;
+        PartResourceDefinition _methane;
+        PartResourceDefinition _monoxide;
+        PartResourceDefinition _neon;
+        PartResourceDefinition _nitrogen;
+        PartResourceDefinition _nitrogen15;
+        PartResourceDefinition _oxygen;
+        PartResourceDefinition _water; // water vapour can form a part of atmosphere as well
+        PartResourceDefinition _heavywater;
+        PartResourceDefinition _xenon;
+        PartResourceDefinition _deuterium;
+        PartResourceDefinition _krypton;
+        PartResourceDefinition _sodium;
              
-        protected double _atmosphere_consumption_rate;
+        double _atmosphere_consumption_rate;
 
-        protected double _ammonia_production_rate;
-        protected double _argon_production_rate;
-        protected double _dioxide_production_rate;
-        protected double _helium3_production_rate;
-        protected double _helium4_production_rate;
-        protected double _hydrogen_production_rate;
-        protected double _methane_production_rate;
-        protected double _monoxide_production_rate;
-        protected double _neon_production_rate;
-        protected double _nitrogen_production_rate;
-        protected double _nitrogen15_production_rate;
-        protected double _oxygen_production_rate;
-        protected double _water_production_rate;
-        protected double _heavywater_production_rate;
-        protected double _xenon_production_rate;
-        protected double _deuterium_production_rate;
-        protected double _krypton_production_rate;
-        protected double _sodium_production_rate;
+        double _ammonia_production_rate;
+        double _argon_production_rate;
+        double _dioxide_production_rate;
+        double _helium3_production_rate;
+        double _helium4_production_rate;
+        double _hydrogen_production_rate;
+        double _methane_production_rate;
+        double _monoxide_production_rate;
+        double _neon_production_rate;
+        double _nitrogen_production_rate;
+        double _nitrogen15_production_rate;
+        double _oxygen_production_rate;
+        double _water_production_rate;
+        double _heavywater_production_rate;
+        double _xenon_production_rate;
+        double _deuterium_production_rate;
+        double _krypton_production_rate;
+        double _sodium_production_rate;
 
-        protected string _atmosphere_resource_name;
-        protected string _ammonia_resource_name;
-        protected string _argon_resource_name;
-        protected string _dioxide_resource_name;
-        protected string _helium3_resource_name;
-        protected string _helium4_resource_name;
-        protected string _hydrogen_resource_name;
-        protected string _methane_resource_name;
-        protected string _monoxide_resource_name;
-        protected string _neon_resource_name;
-        protected string _nitrogen_resource_name;
-        protected string _nitrogen15_resource_name;
-        protected string _oxygen_resource_name;
-        protected string _water_resource_name;
-        protected string _heavywater_resource_name;
-        protected string _xenon_resource_name;
-        protected string _deuterium_resource_name;
-        protected string _krypton_resource_name;
-        protected string _sodium_resource_name;
+        string _atmosphere_resource_name;
+        string _ammonia_resource_name;
+        string _argon_resource_name;
+        string _dioxide_resource_name;
+        string _helium3_resource_name;
+        string _helium4_resource_name;
+        string _hydrogen_resource_name;
+        string _methane_resource_name;
+        string _monoxide_resource_name;
+        string _neon_resource_name;
+        string _nitrogen_resource_name;
+        string _nitrogen15_resource_name;
+        string _oxygen_resource_name;
+        string _water_resource_name;
+        string _heavywater_resource_name;
+        string _xenon_resource_name;
+        string _deuterium_resource_name;
+        string _krypton_resource_name;
+        string _sodium_resource_name;
 
         public RefineryType RefineryType { get { return RefineryType.cryogenics; } }
 
@@ -188,47 +190,47 @@ namespace FNPlugin.Refinery
             _sodium = PartResourceLibrary.Instance.GetDefinition(_sodium_resource_name);
         }
 
-        protected double _maxCapacityAtmosphereMass;
-        protected double _maxCapacityAmmoniaMass;
-        protected double _maxCapacityArgonMass;
-        protected double _maxCapacityDioxideMass;
-        protected double _maxCapacityHelium3Mass;
-        protected double _maxCapacityHelium4Mass;
-        protected double _maxCapacityHydrogenMass;
-        protected double _maxCapacityMethaneMass;
-        protected double _maxCapacityMonoxideMass;
-        protected double _maxCapacityNeonMass;
-        protected double _maxCapacityNitrogenMass;
-        protected double _maxCapacityNitrogen15Mass;
-        protected double _maxCapacityOxygenMass;
-        protected double _maxCapacityWaterMass;
-        protected double _maxCapacityHeavyWaterMass;
-        protected double _maxCapacityXenonMass;
-        protected double _maxCapacityDeuteriumMass;
-        protected double _maxCapacityKryptonMass;
-        protected double _maxCapacitySodiumMass;
+        double _maxCapacityAtmosphereMass;
+        double _maxCapacityAmmoniaMass;
+        double _maxCapacityArgonMass;
+        double _maxCapacityDioxideMass;
+        double _maxCapacityHelium3Mass;
+        double _maxCapacityHelium4Mass;
+        double _maxCapacityHydrogenMass;
+        double _maxCapacityMethaneMass;
+        double _maxCapacityMonoxideMass;
+        double _maxCapacityNeonMass;
+        double _maxCapacityNitrogenMass;
+        double _maxCapacityNitrogen15Mass;
+        double _maxCapacityOxygenMass;
+        double _maxCapacityWaterMass;
+        double _maxCapacityHeavyWaterMass;
+        double _maxCapacityXenonMass;
+        double _maxCapacityDeuteriumMass;
+        double _maxCapacityKryptonMass;
+        double _maxCapacitySodiumMass;
        
-        protected double _availableAtmosphereMass;
+        double _availableAtmosphereMass;
 
-        protected double _spareRoomAtmosphereMass;
-        protected double _spareRoomAmmoniaMass;
-        protected double _spareRoomArgonMass;
-        protected double _spareRoomDioxideMass;
-        protected double _spareRoomHelium3Mass;
-        protected double _spareRoomHelium4Mass;
-        protected double _spareRoomHydrogenMass;
-        protected double _spareRoomMethaneMass;
-        protected double _spareRoomMonoxideMass;
-        protected double _spareRoomNeonMass;
-        protected double _spareRoomNitrogenMass;
-        protected double _spareRoomNitrogen15Mass;
-        protected double _spareRoomOxygenMass;
-        protected double _spareRoomWaterMass;
-        protected double _spareRoomHeavyWaterMass;
-        protected double _spareRoomXenonMass;
-        protected double _spareRoomDeuteriumMass;
-        protected double _spareRoomKryptonMass;
-        protected double _spareRoomSodiumMass;
+        double _spareRoomAtmosphereMass;
+        double _spareRoomAmmoniaMass;
+        double _spareRoomArgonMass;
+        double _spareRoomDioxideMass;
+        double _spareRoomHelium3Mass;
+        double _spareRoomHelium4Mass;
+        double _spareRoomHydrogenMass;
+        double _spareRoomMethaneMass;
+        double _spareRoomMonoxideMass;
+        double _spareRoomNeonMass;
+        double _spareRoomNitrogenMass;
+        double _spareRoomNitrogen15Mass;
+        double _spareRoomOxygenMass;
+        double _spareRoomWaterMass;
+        double _spareRoomHeavyWaterMass;
+        double _spareRoomXenonMass;
+        double _spareRoomDeuteriumMass;
+        double _spareRoomKryptonMass;
+        double _spareRoomSodiumMass;
 
         List<AtmosphericIntake> _intakesList; // create a new list for keeping track of atmo intakes
 
@@ -304,7 +306,7 @@ namespace FNPlugin.Refinery
                 _spareRoomNeonMass > 0 || _spareRoomWaterMass > 0 || _spareRoomHeavyWaterMass > 0 || _spareRoomOxygenMass > 0 || 
                 _spareRoomXenonMass > 0 || _spareRoomDeuteriumMass > 0 || _spareRoomKryptonMass > 0 || _spareRoomSodiumMass > 0 ||  _spareRoomAmmoniaMass > 0)) 
             {
-                /* Now to get the actual percentages from ORSAtmosphericResourceHandler Freethinker extended.
+                /* Now to get the actual percentages from AtmosphericResourceHandler Freethinker extended.
                  * Calls getAtmosphericResourceContent which calls getAtmosphericCompositionForBody which (if there's no definition, i.e. we're using a custom solar system
                  * with weird and fantastic new planets) in turn calls the new GenerateCompositionFromCelestialBody function Freethinker created, which creates a composition
                  * for the upper-level functions based on the planet's size and temperatures. So even though this is calling one method, it's actually going through two or three
@@ -486,7 +488,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Intake Atmo. Consumption", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((_atmosphere_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.0000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((_atmosphere_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -533,7 +535,7 @@ namespace FNPlugin.Refinery
             GUILayout.Label(resourceName, _value_label, GUILayout.Width(valueWidth));
             GUILayout.Label((percentage * 100).ToString("##.######") + "%", _value_label, GUILayout.Width(valueWidth));
             GUILayout.Label(productionRate.ToString("##.######") + " U/s", _value_label, GUILayout.Width(valueWidth));
-            GUILayout.Label((productionRate * GameConstants.HOUR_SECONDS).ToString("##.######") + " U/h", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((productionRate * GameConstants.SECONDS_IN_HOUR).ToString("##.######") + " U/h", _value_label, GUILayout.Width(valueWidth));
             if (spareRoom > 0)
             {
                 GUILayout.Label((spareRoom).ToString("##.######") + " t", _value_label, GUILayout.Width(valueWidth));

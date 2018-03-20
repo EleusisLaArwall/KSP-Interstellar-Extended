@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace FNPlugin
 {
-    class InterstellarRCSModule : FNResourceSuppliableModule 
+    class InterstellarRCSModule : ResourceSuppliableModule 
     {
         [KSPField(isPersistant = true)]
         public int fuel_mode;
@@ -139,7 +139,6 @@ namespace FNPlugin
             {
                 // you can have any fuel you want in the editor but not in flight
                 //List<PartResource> totalpartresources = part.GetConnectedResources(new_propellant.name).ToList();
-
                 //if (!totalpartresources.Any() && maxSwitching > 0)
                 //{
                 //    SwitchPropellant(moveNext, --maxSwitching);
@@ -198,7 +197,7 @@ namespace FNPlugin
             if (String.IsNullOrEmpty(displayName))
                 displayName = part.partInfo.title;
 
-            String[] resources_to_supply = { FNResourceManager.FNRESOURCE_WASTEHEAT };
+            String[] resources_to_supply = { ResourceManager.FNRESOURCE_WASTEHEAT };
             this.resources_to_supply = resources_to_supply;
 
             attachedRCS = this.part.FindModuleImplementing<ModuleRCS>();
@@ -302,14 +301,14 @@ namespace FNPlugin
                 power_requested_f = currentThrust * currentIsp * efficencyModifier / currentThrustMultiplier;
 
                 power_recieved_f = CheatOptions.InfiniteElectricity 
-                    ? power_requested_f 
-                    : consumeFNResource(power_requested_f * TimeWarp.fixedDeltaTime, FNResourceManager.FNRESOURCE_MEGAJOULES) / TimeWarp.fixedDeltaTime;
+                    ? power_requested_f
+                    : consumeFNResourcePerSecond(power_requested_f, ResourceManager.FNRESOURCE_MEGAJOULES);
 
                 double heat_to_produce = power_recieved_f * (1 - efficency);
 
                 heat_production_f = CheatOptions.IgnoreMaxTemperature 
-                    ? heat_to_produce 
-                    : supplyFNResourceFixed(heat_to_produce * TimeWarp.fixedDeltaTime, FNResourceManager.FNRESOURCE_WASTEHEAT) / TimeWarp.fixedDeltaTime;
+                    ? heat_to_produce
+                    : supplyFNResourcePerSecond(heat_to_produce, ResourceManager.FNRESOURCE_WASTEHEAT);
 
                 power_ratio = power_requested_f > 0 ? Math.Min(power_recieved_f / power_requested_f, 1) : 1;
             }

@@ -5,8 +5,6 @@ using UnityEngine;
 
 namespace FNPlugin
 {
-    //enum GenerationType { Mk1, Mk2, Mk3, Mk4, Mk5 }
-
     class VistaEngineControllerAdvanced : FusionEngineControllerBase
     {
         const float maxIsp = 27200f;
@@ -25,15 +23,15 @@ namespace FNPlugin
 
         protected override float SelectedIsp { get { return localIsp; } }
         protected override float MaxIsp { get { return maxIsp; } }
-		protected override double MaxThrustEfficiencyByIspPower { get { return maxThrustEfficiencyByIspPower; } }
-		protected override double NeutronAbsorptionFractionAtMinIsp { get { return neutronAbsorptionFractionAtMinIsp; } }
+        protected override double MaxThrustEfficiencyByIspPower { get { return maxThrustEfficiencyByIspPower; } }
+        protected override double NeutronAbsorptionFractionAtMinIsp { get { return neutronAbsorptionFractionAtMinIsp; } }
     }
 
-    abstract class FusionEngineControllerBase : FNResourceSuppliableModule, IUpgradeableModule 
+    abstract class FusionEngineControllerBase : ResourceSuppliableModule, IUpgradeableModule 
     {
         // Persistant
-		[KSPField(isPersistant = true)]
-		bool IsEnabled;
+        [KSPField(isPersistant = true)]
+        bool IsEnabled;
         [KSPField(isPersistant = true)]
         bool rad_safety_features = true;
 
@@ -43,10 +41,14 @@ namespace FNPlugin
         public float minThrottleRatioMk2 = 0.1f;
         [KSPField(isPersistant = false)]
         public float minThrottleRatioMk3 = 0.05f;
+        [KSPField(isPersistant = false)]
+        public float minThrottleRatioMk4 = 0.05f;
+        [KSPField(isPersistant = false)]
+        public float minThrottleRatioMk5 = 0.05f;
 
         // None Persistant
-		[KSPField(isPersistant = false, guiActive = true, guiName = "Radiation Hazard To")]
-		public string radhazardstr = "";
+        [KSPField(isPersistant = false, guiActive = true, guiName = "Radiation Hazard To")]
+        public string radhazardstr = "";
         [KSPField(isPersistant = false, guiActive = true, guiName = "Temperature")]
         public string temperatureStr = "";
 
@@ -55,14 +57,26 @@ namespace FNPlugin
         [KSPField(isPersistant = false)]
         public float powerRequirementUpgraded = 1250;
         [KSPField(isPersistant = false)]
+        public float powerRequirementUpgraded1 = 0;
+        [KSPField(isPersistant = false)]
         public float powerRequirementUpgraded2 = 2500;
+        [KSPField(isPersistant = false)]
+        public float powerRequirementUpgraded3 = 2500;
+        [KSPField(isPersistant = false)]
+        public float powerRequirementUpgraded4 = 2500;
 
         [KSPField(isPersistant = false)]
         public float maxThrust = 75;
         [KSPField(isPersistant = false)]
         public float maxThrustUpgraded = 300;
         [KSPField(isPersistant = false)]
+        public float maxThrustUpgraded1 = 0;
+        [KSPField(isPersistant = false)]
         public float maxThrustUpgraded2 = 1200;
+        [KSPField(isPersistant = false)]
+        public float maxThrustUpgraded3 = 1200;
+        [KSPField(isPersistant = false)]
+        public float maxThrustUpgraded4 = 1200;
 
         [KSPField(isPersistant = false)]
         public float maxAtmosphereDensity = 0.001f;
@@ -74,16 +88,22 @@ namespace FNPlugin
         [KSPField(isPersistant = false)]
         public double efficiency = 0.19;
         [KSPField(isPersistant = false)]
-		public double efficiencyUpgraded = 0.38;
+        public double efficiencyUpgraded = 0.38;
         [KSPField(isPersistant = false)]
-		public double efficiencyUpgraded2 = 0.76;
+        public double efficiencyUpgraded2 = 0.76;
 
         [KSPField(isPersistant = false)]
         public float fusionWasteHeat = 625;
         [KSPField(isPersistant = false)]
         public float fusionWasteHeatUpgraded = 2500;
         [KSPField(isPersistant = false)]
+        public float fusionWasteHeatUpgraded1 = 0;
+        [KSPField(isPersistant = false)]
         public float fusionWasteHeatUpgraded2 = 10000;
+        [KSPField(isPersistant = false)]
+        public float fusionWasteHeatUpgraded3 = 10000;
+        [KSPField(isPersistant = false)]
+        public float fusionWasteHeatUpgraded4 = 10000;
 
         // Use for SETI Mode
         [KSPField(isPersistant = false)]
@@ -127,30 +147,30 @@ namespace FNPlugin
         protected abstract float SelectedIsp { get; }
         protected abstract float MaxIsp { get; }
         protected abstract double MaxThrustEfficiencyByIspPower { get; }
-		protected abstract double NeutronAbsorptionFractionAtMinIsp { get; }
+        protected abstract double NeutronAbsorptionFractionAtMinIsp { get; }
 
         // protected
         protected bool hasrequiredupgrade = false;
-		protected bool radhazard = false;
-		protected float minISP = 0;
-		protected double standard_megajoule_rate = 0;
-		protected double standard_deuterium_rate = 0;
-		protected double standard_tritium_rate = 0;
+        protected bool radhazard = false;
+        protected float minISP = 0;
+        protected double standard_megajoule_rate = 0;
+        protected double standard_deuterium_rate = 0;
+        protected double standard_tritium_rate = 0;
         protected ModuleEngines curEngineT;
 
         public GenerationType EngineGenerationType { get; private set; }
 
-		[KSPEvent(guiActive = true, guiName = "Disable Radiation Safety", active = true)]
-		public void DeactivateRadSafety() 
+        [KSPEvent(guiActive = true, guiName = "Disable Radiation Safety", active = true)]
+        public void DeactivateRadSafety() 
         {
-			rad_safety_features = false;
-		}
+            rad_safety_features = false;
+        }
 
-		[KSPEvent(guiActive = true, guiName = "Activate Radiation Safety", active = false)]
-		public void ActivateRadSafety() 
+        [KSPEvent(guiActive = true, guiName = "Activate Radiation Safety", active = false)]
+        public void ActivateRadSafety() 
         {
-			rad_safety_features = true;
-		}
+            rad_safety_features = true;
+        }
 
         #region IUpgradeableModule
 
@@ -185,9 +205,15 @@ namespace FNPlugin
                 if (EngineGenerationType == GenerationType.Mk1)
                     return fusionWasteHeat;
                 else if (EngineGenerationType == GenerationType.Mk2)
-                    return fusionWasteHeatUpgraded;
-                else
+                {
+                    return fusionWasteHeatUpgraded1 > 0 ? fusionWasteHeatUpgraded1 : fusionWasteHeatUpgraded;
+                }
+                else if (EngineGenerationType == GenerationType.Mk3)
                     return fusionWasteHeatUpgraded2;
+                else if (EngineGenerationType == GenerationType.Mk4)
+                    return fusionWasteHeatUpgraded3;
+                else
+                    return fusionWasteHeatUpgraded4;
             } 
         }
 
@@ -198,9 +224,15 @@ namespace FNPlugin
                 if (EngineGenerationType == GenerationType.Mk1)
                     return maxThrust;
                 else if (EngineGenerationType == GenerationType.Mk2)
-                    return maxThrustUpgraded;
-                else
+                {
+                    return maxThrustUpgraded1 > 0 ? maxThrustUpgraded1 : maxThrustUpgraded;
+                }
+                else if (EngineGenerationType == GenerationType.Mk3)
                     return maxThrustUpgraded2;
+                else if (EngineGenerationType == GenerationType.Mk4)
+                    return maxThrustUpgraded3;
+                else
+                    return maxThrustUpgraded4;
             }
         }
 
@@ -232,9 +264,15 @@ namespace FNPlugin
                 if (EngineGenerationType == GenerationType.Mk1)
                     return powerRequirement;
                 else if (EngineGenerationType == GenerationType.Mk2)
-                    return powerRequirementUpgraded;
-                else
+                {
+                    return powerRequirementUpgraded1 > 0 ? powerRequirementUpgraded1 : powerRequirementUpgraded;
+                }
+                else if (EngineGenerationType == GenerationType.Mk3)
                     return powerRequirementUpgraded2;
+                else if (EngineGenerationType == GenerationType.Mk4)
+                    return powerRequirementUpgraded3;
+                else
+                    return powerRequirementUpgraded4;
             }
         }
 
@@ -246,11 +284,14 @@ namespace FNPlugin
                     return minThrottleRatioMk1;
                 else if (EngineGenerationType == GenerationType.Mk2)
                     return minThrottleRatioMk2;
-                else
+                else if (EngineGenerationType == GenerationType.Mk3)
                     return minThrottleRatioMk3;
+                else if (EngineGenerationType == GenerationType.Mk4)
+                    return minThrottleRatioMk4;
+                else
+                    return minThrottleRatioMk5;
             }
-        }
-        
+        }        
 
         public override void OnStart(PartModule.StartState state) 
         {
@@ -276,14 +317,14 @@ namespace FNPlugin
 
                 DetermineTechLevel();
 
-				// calculate WasteHeat Capacity
-				var wasteheatPowerResource = part.Resources[FNResourceManager.FNRESOURCE_WASTEHEAT];
-				if (wasteheatPowerResource != null)
-				{
-					var wasteheat_ratio = Math.Min(wasteheatPowerResource.amount / wasteheatPowerResource.maxAmount, 0.95);
-					wasteheatPowerResource.maxAmount = part.mass * 2.0e+4 * wasteHeatMultiplier;
-					wasteheatPowerResource.amount = wasteheatPowerResource.maxAmount * wasteheat_ratio;
-				}
+                // calculate WasteHeat Capacity
+                var wasteheatPowerResource = part.Resources[ResourceManager.FNRESOURCE_WASTEHEAT];
+                if (wasteheatPowerResource != null)
+                {
+                    var wasteheat_ratio = Math.Min(wasteheatPowerResource.amount / wasteheatPowerResource.maxAmount, 0.95);
+                    wasteheatPowerResource.maxAmount = part.mass * 2.0e+4 * wasteHeatMultiplier;
+                    wasteheatPowerResource.amount = wasteheatPowerResource.maxAmount * wasteheat_ratio;
+                }
 
                 if (state != StartState.Editor)
                     part.emissiveConstant = maxTempatureRadiators > 0 ? 1 - coldBathTemp / maxTempatureRadiators : 0.01;
@@ -292,46 +333,46 @@ namespace FNPlugin
             {
                 Debug.LogError("[KSPI] - FusionEngine OnStart eception: " + e.Message);
             }
-		}
+        }
 
-		public override void OnUpdate() 
+        public override void OnUpdate() 
         {
             if (curEngineT == null) return;
 
             Events["DeactivateRadSafety"].active = rad_safety_features;
             Events["ActivateRadSafety"].active = !rad_safety_features;
 
-			if (curEngineT.isOperational && !IsEnabled) 
+            if (curEngineT.isOperational && !IsEnabled) 
             {
-				IsEnabled = true;
-				part.force_activate ();
-			}
+                IsEnabled = true;
+                part.force_activate ();
+            }
 
-			int kerbal_hazard_count = 0;
-			foreach (Vessel vess in FlightGlobals.Vessels) 
+            int kerbal_hazard_count = 0;
+            foreach (Vessel vess in FlightGlobals.Vessels) 
             {
-				float distance = (float)Vector3d.Distance (vessel.transform.position, vess.transform.position);
+                float distance = (float)Vector3d.Distance (vessel.transform.position, vess.transform.position);
                 if (distance < leathalDistance && vess != this.vessel)
-					kerbal_hazard_count += vess.GetCrewCount ();
-			}
+                    kerbal_hazard_count += vess.GetCrewCount ();
+            }
 
-			if (kerbal_hazard_count > 0) 
+            if (kerbal_hazard_count > 0) 
             {
-				radhazard = true;
-				if (kerbal_hazard_count > 1) 
-					radhazardstr = kerbal_hazard_count.ToString () + " Kerbals.";
+                radhazard = true;
+                if (kerbal_hazard_count > 1) 
+                    radhazardstr = kerbal_hazard_count.ToString () + " Kerbals.";
                 else 
-					radhazardstr = kerbal_hazard_count.ToString () + " Kerbal.";
-				
-				Fields["radhazardstr"].guiActive = true;
- 			} 
+                    radhazardstr = kerbal_hazard_count.ToString () + " Kerbal.";
+                
+                Fields["radhazardstr"].guiActive = true;
+            } 
             else 
             {
-				Fields["radhazardstr"].guiActive = false;
-				radhazard = false;
-				radhazardstr = "None.";
-			}
-		}
+                Fields["radhazardstr"].guiActive = false;
+                radhazard = false;
+                radhazardstr = "None.";
+            }
+        }
 
         private void ShutDown(string reason)
         {
@@ -346,7 +387,7 @@ namespace FNPlugin
             }
         }
 
-		public override void OnFixedUpdate()
+        public override void OnFixedUpdate()
         {
             temperatureStr = part.temperature.ToString("0.00") + "K / " + part.maxTemp.ToString("0.00") + "K";
 
@@ -369,17 +410,15 @@ namespace FNPlugin
             {
                 // Calculate Fusion Ratio
                 enginePowerRequirement = CurrentPowerRequirement;
-                var requestedPowerFixed = enginePowerRequirement * TimeWarp.fixedDeltaTime;
 
-                var recievedPowerFixed = CheatOptions.InfiniteElectricity  
-                    ? requestedPowerFixed 
-                    : consumeFNResource(requestedPowerFixed, FNResourceManager.FNRESOURCE_MEGAJOULES);
+                var recievedPower = CheatOptions.InfiniteElectricity
+                    ? enginePowerRequirement
+                    : consumeFNResourcePerSecond(enginePowerRequirement, ResourceManager.FNRESOURCE_MEGAJOULES);
 
-                var plasma_ratio = recievedPowerFixed / requestedPowerFixed;
+                var plasma_ratio = recievedPower / enginePowerRequirement;
                 fusionRatio = plasma_ratio >= 1 ? 1 : plasma_ratio > 0.75 ? Math.Pow(plasma_ratio, 6) : 0;
 
-                var laserWasteheatFixed = recievedPowerFixed * (1 - LaserEfficiency);
-                laserWasteheat = laserWasteheatFixed / TimeWarp.fixedDeltaTime;
+                laserWasteheat = recievedPower * (1 - LaserEfficiency);
 
                 // The Aborbed wasteheat from Fusion
                 var rateMultplier = minISP / SelectedIsp;
@@ -389,8 +428,8 @@ namespace FNPlugin
                 // Lasers produce Wasteheat
                 if (!CheatOptions.IgnoreMaxTemperature)
                 {
-                    supplyFNResourceFixed(laserWasteheatFixed, FNResourceManager.FNRESOURCE_WASTEHEAT);
-                    supplyFNResourceFixed(absorbedWasteheat * TimeWarp.fixedDeltaTime, FNResourceManager.FNRESOURCE_WASTEHEAT);
+                    supplyFNResourcePerSecond(laserWasteheat, ResourceManager.FNRESOURCE_WASTEHEAT);
+                    supplyFNResourcePerSecond(absorbedWasteheat, ResourceManager.FNRESOURCE_WASTEHEAT);
                 }
 
                 // change ratio propellants Hydrogen/Fusion
@@ -399,7 +438,7 @@ namespace FNPlugin
 
                 // Update ISP
                 var currentIsp = SelectedIsp; 
-                FloatCurve newISP = new FloatCurve();
+                var newISP = new FloatCurve();
                 newISP.Add(0, currentIsp);
                 newISP.Add(1, 0);
                 curEngineT.atmosphereCurve = newISP;
@@ -411,7 +450,7 @@ namespace FNPlugin
 
                 maximumThrust = MaximumThrust;
 
-                if (!curEngineT.getFlameoutState && plasma_ratio < 0.75 && recievedPowerFixed > 0)
+                if (!curEngineT.getFlameoutState && plasma_ratio < 0.75 && recievedPower > 0)
                     curEngineT.status = "Insufficient Electricity";
             }
             else
@@ -422,7 +461,7 @@ namespace FNPlugin
                 fusionRatio = 0;
 
                 var currentIsp = SelectedIsp; 
-                FloatCurve newISP = new FloatCurve();
+                var newISP = new FloatCurve();
                 newISP.Add(0, currentIsp);
                 newISP.Add(1, 0);
                 curEngineT.atmosphereCurve = newISP;
@@ -446,18 +485,18 @@ namespace FNPlugin
             if (!radhazard || throttle <= 0.00 || rad_safety_features) return;
 
             System.Random rand = new System.Random(new System.DateTime().Millisecond);
-            List<Vessel> vessels_to_remove = new List<Vessel>();
-            List<ProtoCrewMember> crew_to_remove = new List<ProtoCrewMember>();
+            var vessels_to_remove = new List<Vessel>();
+            var crew_to_remove = new List<ProtoCrewMember>();
             double death_prob = TimeWarp.fixedDeltaTime;
 
             foreach (Vessel vess in FlightGlobals.Vessels)
             {
-                float distance = (float)Vector3d.Distance(vessel.transform.position, vess.transform.position);
+                var distance = Vector3d.Distance(vessel.transform.position, vess.transform.position);
 
                 if (distance >= leathalDistance || vess == this.vessel || vess.GetCrewCount() <= 0) continue;
 
-                float inv_sq_dist = distance / killDivider;
-                float inv_sq_mult = 1.0f / inv_sq_dist / inv_sq_dist;
+                var inv_sq_dist = distance / killDivider;
+                var inv_sq_mult = 1.0f / inv_sq_dist / inv_sq_dist;
                 foreach (ProtoCrewMember crew_member in vess.GetVesselCrew())
                 {
                     if (UnityEngine.Random.value < (1.0 - death_prob * inv_sq_mult)) continue;
@@ -493,5 +532,5 @@ namespace FNPlugin
         {
             return 3;
         }
-	}
+    }
 }

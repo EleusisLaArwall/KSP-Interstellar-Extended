@@ -162,6 +162,8 @@ namespace FNPlugin
 
         private static int _secondsInDay = GameConstants.KEBRIN_DAY_SECONDS;
         public static int SecondsInDay { get { return _secondsInDay; } }
+        public static int HoursInDay { get { return GameConstants.KEBRIN_HOURS_DAY; } }
+        public static int SecondsInHour { get { return GameConstants.SECONDS_IN_HOUR; } }
 
         private static double _spotsizeMult = 1.22;
         public static double SpotsizeMult { get { return _spotsizeMult; } }
@@ -315,6 +317,11 @@ namespace FNPlugin
         private static string _jetUpgradeTech5 = String.Empty;
         public static string JetUpgradeTech5 { get { return _jetUpgradeTech5; } private set { _jetUpgradeTech5 = value; } }
 
+        // RadiatorAreaMultiplier
+
+        private static double _radiatorAreaMultiplier = 2;
+        public static double RadiatorAreaMultiplier { get { return _radiatorAreaMultiplier; } private set { _radiatorAreaMultiplier = value; } }
+
         // Radiator Upgrade Techs
 
         private static string _radiatorUpgradeTech1 = String.Empty;
@@ -347,6 +354,32 @@ namespace FNPlugin
 
         #endregion
 
+
+        public static string formatMassStr(double mass, string format = "0.0000000")
+        {
+            if (mass >= 1)
+                return FormatString(mass / 1e+0, format) + " t";
+            else if (mass >= 1e-3)
+                return FormatString(mass / 1e-3, format) + " kg";
+            else if (mass >= 1e-6)
+                return FormatString(mass / 1e-6, format) + " g";
+            else if (mass >= 1e-9)
+                return FormatString(mass / 1e-9, format)+ " mg";
+            else if (mass >= 1e-12)
+                return FormatString(mass / 1e-12, format) + " ug";
+            else if (mass >= 1e-15)
+                return FormatString(mass / 1e-15, format) + " ng";
+            else
+                return FormatString(mass / 1e-18, format) + " pg";
+        }
+
+        private static string FormatString(double value,  string format)
+        {
+            if (format == null)
+                return value.ToString();
+            else
+                return value.ToString(format);
+        }
 
         public static bool HasTechRequirementOrEmpty(string techName)
         {
@@ -996,6 +1029,13 @@ namespace FNPlugin
                         Debug.Log("[KSPI] JetUpgradeTech5 " + PluginHelper.JetUpgradeTech5);
                     }
 
+                    // Radiator
+                    if (plugin_settings.HasValue("RadiatorAreaMultiplier"))
+                    {
+                        PluginHelper.RadiatorAreaMultiplier = double.Parse(plugin_settings.GetValue("RadiatorAreaMultiplier"));
+                        Debug.Log("[KSPI] RadiatorAreaMultiplier " + PluginHelper.RadiatorAreaMultiplier);
+                    }
+
                     // Radiator Upgrade Tech
                     if (plugin_settings.HasValue("RadiatorUpgradeTech1"))
                     {
@@ -1057,94 +1097,6 @@ namespace FNPlugin
 
             //gdb = GameDatabase.Instance;
             plugin_init = true;
-
-            foreach (AvailablePart available_part in PartLoader.LoadedPartsList)
-            {
-                try
-                {
-                    if (available_part.partPrefab.Modules == null) continue;
-
-                    ModuleResourceIntake intake = available_part.partPrefab.FindModuleImplementing<ModuleResourceIntake>();
-
-                    if (intake != null && intake.resourceName == InterstellarResourcesConfiguration.Instance.IntakeAir)
-                    {
-                        var pm = available_part.partPrefab.gameObject.AddComponent<AtmosphericIntake>();
-                        available_part.partPrefab.Modules.Add(pm);
-                        pm.area = intake.area;
-                        //pm.aoaThreshold = intake.aoaThreshold;
-                        pm.intakeTransformName = intake.intakeTransformName;
-                        //pm.maxIntakeSpeed = intake.maxIntakeSpeed;
-                        pm.unitScalar = intake.unitScalar;
-                        //pm.useIntakeCompensation = intake.useIntakeCompensation;
-                        //pm.storesResource = intake.storesResource;
-
-                        //PartResource intake_air_resource = available_part.partPrefab.Resources[InterstellarResourcesConfiguration.Instance.IntakeAir];
-
-                        //if (intake_air_resource != null && !available_part.partPrefab.Resources.Contains(InterstellarResourcesConfiguration.Instance.IntakeAtmosphere))
-                        //{
-                        //    ConfigNode node = new ConfigNode("RESOURCE");
-                        //    node.AddValue("name", InterstellarResourcesConfiguration.Instance.IntakeAtmosphere);
-                        //    node.AddValue("maxAmount", intake_air_resource.maxAmount);
-                        //    node.AddValue("possibleAmount", intake_air_resource.amount);
-                        //    available_part.partPrefab.AddResource(node);
-                        //}
-
-                    }
-
-
-                    if (available_part.partPrefab.FindModulesImplementing<ModuleDeployableSolarPanel>().Any())
-                    {
-                        // FNSolarPanelWasteHeatModule is not already on the part
-                        var existingSolarControlModule = available_part.partPrefab.FindModuleImplementing<FNSolarPanelWasteHeatModule>();
-                        if (existingSolarControlModule == null)
-                        {
-                            ModuleDeployableSolarPanel panel = available_part.partPrefab.FindModuleImplementing<ModuleDeployableSolarPanel>();
-                            if (panel.chargeRate > 0)
-                            {
-                                FNSolarPanelWasteHeatModule pm = available_part.partPrefab.gameObject.AddComponent(typeof(FNSolarPanelWasteHeatModule)) as FNSolarPanelWasteHeatModule;
-                                available_part.partPrefab.Modules.Add(pm);
-                            }
-
-                            //if (!available_part.partPrefab.Resources.Contains("WasteHeat") && panel.chargeRate > 0)
-                            //{
-                            //    ConfigNode node = new ConfigNode("RESOURCE");
-                            //    node.AddValue("name", "WasteHeat");
-                            //    node.AddValue("maxAmount", panel.chargeRate * 100);
-                            //    node.AddValue("possibleAmount", 0);
-
-                            //    PartResource pr = available_part.partPrefab.AddResource(node);
-
-                            //    if (available_part.resourceInfo != null && pr != null)
-                            //    {
-                            //        if (available_part.resourceInfo.Length == 0)
-                            //            available_part.resourceInfo = pr.resourceName + ":" + pr.amount + " / " + pr.maxAmount;
-                            //        else
-                            //            available_part.resourceInfo = available_part.resourceInfo + "\n" + pr.resourceName + ":" + pr.amount + " / " + pr.maxAmount;
-                            //    }
-                            //}
-                        }
-
-                    }
-
-                    if (available_part.partPrefab.FindModulesImplementing<ElectricEngineControllerFX>().Count() > 0)
-                    {
-                        available_part.moduleInfo = available_part.partPrefab.FindModulesImplementing<ElectricEngineControllerFX>().First().GetInfo();
-                        available_part.moduleInfos.RemoveAll(modi => modi.moduleName == "Engine");
-                        AvailablePart.ModuleInfo mod_info = available_part.moduleInfos.FirstOrDefault(modi => modi.moduleName == "Electric Engine Controller");
-
-                        if (mod_info != null)
-                            mod_info.moduleName = "Electric Engine";
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    if (available_part.partPrefab != null)
-                        print("[KSPI] Exception caught adding to: " + available_part.partPrefab.name + " part: " + ex.ToString());
-                    else
-                        print("[KSPI] Exception caught adding to unknown module");
-                }
-            }
         }
 
         protected static bool warning_displayed = false;

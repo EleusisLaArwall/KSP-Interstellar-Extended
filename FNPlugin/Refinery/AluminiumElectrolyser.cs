@@ -1,20 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
+using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class AluminiumElectrolyser : RefineryActivityBase, IRefineryActivity
     {
-        protected double _alumina_density;
-        protected double _aluminium_density;
-        protected double _oxygen_density;
+        double _alumina_density;
+        double _aluminium_density;
+        double _oxygen_density;
 
-        protected double _alumina_consumption_rate;
-        protected double _aluminium_production_rate;
-        protected double _oxygen_production_rate;
+        double _alumina_consumption_rate;
+        double _aluminium_production_rate;
+        double _oxygen_production_rate;
 
         public RefineryType RefineryType { get { return RefineryType.electrolysis; } }
 
@@ -59,15 +58,15 @@ namespace FNPlugin.Refinery
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Alumina Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_alumina_consumption_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_alumina_consumption_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Aluminium Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_aluminium_production_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_aluminium_production_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Oxygen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_oxygen_production_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_oxygen_production_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 

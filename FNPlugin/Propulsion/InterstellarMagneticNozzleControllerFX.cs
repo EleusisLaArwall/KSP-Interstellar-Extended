@@ -5,13 +5,13 @@ using FNPlugin.Propulsion;
 
 namespace FNPlugin
 {
-    class InterstellarMagneticNozzleControllerFX : FNResourceSuppliableModule, IEngineNoozle
+    class InterstellarMagneticNozzleControllerFX : ResourceSuppliableModule, IEngineNoozle
     {
 		//Persistent False
         [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = true, guiUnits = "m")]
-		public float radius;
+		public float radius = 2.5f;
         [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = true, guiUnits = " t")]
-        public float partMass;
+        public float partMass = 1;
         [KSPField(isPersistant = false)]
         public double powerThrustMultiplier = 1.0;
         [KSPField(isPersistant = false)]
@@ -67,7 +67,7 @@ namespace FNPlugin
 		public override void OnStart(PartModule.StartState state) 
         {
 			// calculate WasteHeat Capacity
-			var wasteheatPowerResource = part.Resources.FirstOrDefault(r => r.resourceName == FNResourceManager.FNRESOURCE_WASTEHEAT);
+			var wasteheatPowerResource = part.Resources.FirstOrDefault(r => r.resourceName == ResourceManager.FNRESOURCE_WASTEHEAT);
 			if (wasteheatPowerResource != null)
 			{
 				var wasteheat_ratio = Math.Min(wasteheatPowerResource.amount / wasteheatPowerResource.maxAmount, 0.95);
@@ -77,8 +77,8 @@ namespace FNPlugin
             
             if (state == StartState.Editor) return;
 
-            _attached_engine = this.part.FindModuleImplementing<ModuleEnginesFX>();
-            _attached_warpable_engine = _attached_engine as ModuleEnginesWarp;
+            _attached_warpable_engine = this.part.FindModuleImplementing<ModuleEnginesWarp>();
+            _attached_engine = _attached_warpable_engine;
 
             if (_attached_engine != null)
                 _attached_engine.Fields["finalThrust"].guiFormat = "F5";
@@ -107,9 +107,9 @@ namespace FNPlugin
 
             throtleExponent = Math.Abs(Math.Log10(_attached_reactor.MinimumChargdIspMult / _attached_reactor.MaximumChargedIspMult));
 
-            exchanger_thrust_divisor = radius > _attached_reactor.GetRadius()
-                ? _attached_reactor.GetRadius() * _attached_reactor.GetRadius() / radius / radius
-                : radius * radius / _attached_reactor.GetRadius() / _attached_reactor.GetRadius();
+            exchanger_thrust_divisor = radius > _attached_reactor.Radius
+                ? _attached_reactor.Radius * _attached_reactor.Radius / radius / radius
+                : radius * radius / _attached_reactor.Radius / _attached_reactor.Radius;
 		}
 
         private IChargedParticleSource BreadthFirstSearchForChargedParticleSource(int stackdepth, int parentdepth)
@@ -131,6 +131,9 @@ namespace FNPlugin
 
         private IChargedParticleSource FindChargedParticleSource(Part currentpart, int stackdepth, int parentdepth)
         {
+            if (currentpart == null)
+                return null;
+
             if (stackdepth == 0)
                 return currentpart.FindModulesImplementing<IChargedParticleSource>().FirstOrDefault();
 
@@ -158,8 +161,8 @@ namespace FNPlugin
             if (HighLogic.LoadedSceneIsFlight && _attached_engine != null && _attached_reactor != null && _attached_reactor.ChargedParticlePropulsionEfficiency > 0)
             {
                 _max_charged_particles_power = _attached_reactor.MaximumChargedPower * exchanger_thrust_divisor * _attached_reactor.ChargedParticlePropulsionEfficiency;
-                _charged_particles_requested = _attached_engine.isOperational && _attached_engine.currentThrottle > 0 ? _max_charged_particles_power : 0; 
-                _charged_particles_received = consumeFNResourcePerSecond(_charged_particles_requested, FNResourceManager.FNRESOURCE_CHARGED_PARTICLES);
+                _charged_particles_requested = _attached_engine.isOperational && _attached_engine.currentThrottle > 0 ? _max_charged_particles_power : 0;
+                _charged_particles_received = consumeFNResourcePerSecond(_charged_particles_requested, ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
 
                 // convert reactor product into propellants when possible
                 var chargedParticleRatio = _attached_reactor.MaximumChargedPower > 0 ? _charged_particles_received / _attached_reactor.MaximumChargedPower : 0;
@@ -171,12 +174,12 @@ namespace FNPlugin
                 {
                     if (_attached_engine.isOperational && _attached_engine.currentThrottle > 0)
                     {
-                        consumeFNResourcePerSecond(_charged_particles_received, FNResourceManager.FNRESOURCE_WASTEHEAT);
+                        consumeFNResourcePerSecond(_charged_particles_received, ResourceManager.FNRESOURCE_WASTEHEAT);
                         _previous_charged_particles_received = _charged_particles_received;
                     }
                     else if (_previous_charged_particles_received > 1)
                     {
-                        consumeFNResourcePerSecond(_previous_charged_particles_received, FNResourceManager.FNRESOURCE_WASTEHEAT);
+                        consumeFNResourcePerSecond(_previous_charged_particles_received, ResourceManager.FNRESOURCE_WASTEHEAT);
                         _previous_charged_particles_received /= 2;
                     }
                     else
@@ -195,7 +198,7 @@ namespace FNPlugin
 
                 _recievedElectricPower = CheatOptions.InfiniteElectricity
                     ? _requestedElectricPower
-                    : consumeFNResourcePerSecond(_requestedElectricPower, FNResourceManager.FNRESOURCE_MEGAJOULES);
+                    : consumeFNResourcePerSecond(_requestedElectricPower, ResourceManager.FNRESOURCE_MEGAJOULES);
 
                 var megajoules_ratio = _recievedElectricPower / _requestedElectricPower;
                 megajoules_ratio = (double.IsNaN(megajoules_ratio) || double.IsInfinity(megajoules_ratio)) ? 0 : megajoules_ratio;

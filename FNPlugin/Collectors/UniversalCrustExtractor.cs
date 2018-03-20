@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
+using FNPlugin.Resources;
 
 namespace FNPlugin.Collectors
 {
@@ -13,7 +13,7 @@ namespace FNPlugin.Collectors
         public double Local { get; set; }
     }
 
-    class UniversalCrustExtractor : FNResourceSuppliableModule
+    class UniversalCrustExtractor : ResourceSuppliableModule
     {
         List<CrustalResource> localResources; // list of resources
 
@@ -70,6 +70,8 @@ namespace FNPlugin.Collectors
         private GUIStyle _bold_label;
         private GUIStyle _normal_label;
 
+        private KSPParticleEmitter[] particleEmitters;
+
         Dictionary<string, CrustalResourceAbundance> CrustalResourceAbundanceDict = new Dictionary<string, CrustalResourceAbundance>();
 
         private AbundanceRequest resourceRequest = new AbundanceRequest // create a new request object that we'll reuse to get the current stock-system resource concentration
@@ -88,7 +90,7 @@ namespace FNPlugin.Collectors
 
 
 
-        [KSPEvent(guiActive = true, guiActiveEditor = true,  guiName = "Deploy", active = true)]
+        [KSPEvent(guiActive = true, guiActiveEditor = true,  guiName = "Deploy Drill", active = true)]
         public void DeployDrill()
         {
             isDeployed = true;
@@ -96,20 +98,28 @@ namespace FNPlugin.Collectors
             {
                 deployAnimation[deployAnimationName].speed = 1;
                 deployAnimation[deployAnimationName].normalizedTime = 0;
-                deployAnimation.Blend(deployAnimationName, part.mass);
+                deployAnimation.Blend(deployAnimationName);
             }
         }
 
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Retract", active = true)]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Retract Drill", active = true)]
         public void RetractDrill()
         {
             bIsEnabled = false;
             isDeployed = false;
+
+            animationState = 0;
+            if (loopAnimation != null) {
+                loopAnimation[loopingAnimationName].speed = -1;
+                loopAnimation[loopingAnimationName].normalizedTime = 0;
+                loopAnimation.Blend(loopingAnimationName);
+            }
+
             if (deployAnimation != null)
             {
                 deployAnimation[deployAnimationName].speed = -1;
                 deployAnimation[deployAnimationName].normalizedTime = 1;
-                deployAnimation.Blend(deployAnimationName, part.mass);
+                deployAnimation.Blend(deployAnimationName);
             }
         }
 
@@ -178,17 +188,19 @@ namespace FNPlugin.Collectors
             deployAnimation = part.FindModelAnimators(deployAnimationName).FirstOrDefault();
             loopAnimation = part.FindModelAnimators(loopingAnimationName).FirstOrDefault();
 
+            particleEmitters = part.GetComponentsInChildren<KSPParticleEmitter>();
+
             if (isDeployed)
             {
-                deployAnimation[deployAnimationName].speed = 0;
+                deployAnimation[deployAnimationName].speed = 1;
                 deployAnimation[deployAnimationName].normalizedTime = 1;
-                deployAnimation.Blend(deployAnimationName, 1);
+                deployAnimation.Blend(deployAnimationName);
             }
             else
             {
-                deployAnimation[deployAnimationName].speed = 0;
+                deployAnimation[deployAnimationName].speed = -1;
                 deployAnimation[deployAnimationName].normalizedTime = 0;
-                deployAnimation.Blend(deployAnimationName, 1);
+                deployAnimation.Blend(deployAnimationName);
             }
 
             // if the setup went well, do the offline collecting dance
@@ -216,8 +228,8 @@ namespace FNPlugin.Collectors
         {
             reasonNotCollecting = CheckIfCollectingPossible();
 
-            Events["DeployDrill"].active = !isDeployed;
-            Events["RetractDrill"].active = isDeployed;
+            Events["DeployDrill"].active = !isDeployed && !deployAnimation.IsPlaying(deployAnimationName);
+            Events["RetractDrill"].active = isDeployed && !deployAnimation.IsPlaying(deployAnimationName);
 
             if (String.IsNullOrEmpty(reasonNotCollecting))
             {
@@ -285,6 +297,7 @@ namespace FNPlugin.Collectors
         {
             if (bIsEnabled)
             {
+                ToggleEmmitters(true);
                 UpdateLoopingAnimation();
 
                 double fixedDeltaTime = (double)(decimal)Math.Round(TimeWarp.fixedDeltaTime, 7);				
@@ -295,6 +308,7 @@ namespace FNPlugin.Collectors
             }
             else
             {
+                ToggleEmmitters(false);
                 foreach (CrustalResource resource in localResources)
                 {
                     CalculateSpareRoom(resource);
@@ -383,7 +397,7 @@ namespace FNPlugin.Collectors
         /// <returns>Bool signifying whether the part is extended or not (if it's animation is played out).</returns>
         private bool IsDrillExtended()
         {
-            return isDeployed;
+            return isDeployed && !deployAnimation.IsPlaying(deployAnimationName);
                 //return deployAnimation.GetScalar == 1; 
 
             //if (_moduleAnimationGroup != null)
@@ -431,13 +445,13 @@ namespace FNPlugin.Collectors
             double dPowerRequirementsMW = PluginHelper.PowerConsumptionMultiplier * mwRequirements;
 
             // calculate the provided power and consume it
-            double dNormalisedRecievedPowerMW = consumeFNResourcePerSecond(dPowerRequirementsMW, FNResourceManager.FNRESOURCE_MEGAJOULES);
+            double dNormalisedRecievedPowerMW = consumeFNResourcePerSecond(dPowerRequirementsMW, ResourceManager.FNRESOURCE_MEGAJOULES);
 
             // when the requirements are low enough, we can get the power needed from stock energy charge
             if (dPowerRequirementsMW < 5 && dNormalisedRecievedPowerMW <= dPowerRequirementsMW)
             {
                 double dRequiredKW = (dPowerRequirementsMW - dNormalisedRecievedPowerMW) * 1000;
-                double dReceivedKW = part.RequestResource(FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, dRequiredKW * deltaTime) / deltaTime;
+                double dReceivedKW = part.RequestResource(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, dRequiredKW * deltaTime) / deltaTime;
                 dNormalisedRecievedPowerMW += dReceivedKW / 1000;
             }
 
@@ -808,9 +822,16 @@ namespace FNPlugin.Collectors
             GUI.DragWindow();
         }
 
+        private void ToggleEmmitters(bool state)
+        {
+            for (int i = 0; i < particleEmitters.Length; ++i)
+            {
+                var e = particleEmitters[i];
+                e.emit = state;
+                e.enabled = state;
+            }
+        }
 
-
-        
         public void UpdateLoopingAnimation()
         {
             if (loopAnimation == null)

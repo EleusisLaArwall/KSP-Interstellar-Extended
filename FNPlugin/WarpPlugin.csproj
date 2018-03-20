@@ -25,48 +25,10 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release KSP 0.90|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>.\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release KSP 0.25|AnyCPU'">
-    <OutputPath>bin\Release KSP 0.25\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug KSP 0.90|AnyCPU'">
-    <OutputPath>..\..\..\..\..\Games\Kerbal Space Program 0.90\GameData\WarpPlugin\Plugins\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <Optimize>false</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release KSP 1.0|AnyCPU'">
-    <OutputPath>bin\Release KSP 1.0\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
     <Prefer32Bit>false</Prefer32Bit>
+    <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
@@ -75,8 +37,7 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="Scale_Redist, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Scale_Redist">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\GameData\TweakScale\plugins\Scale_Redist.dll</HintPath>
     </Reference>
     <Reference Include="System" />
@@ -96,27 +57,30 @@
     <Compile Include="Collectors\RegolithCollector.cs" />
     <Compile Include="Collectors\SolarWindCollector.cs" />
     <Compile Include="Collectors\UniversalCrustExtractor.cs" />
-    <Compile Include="Extensions\CrustalResource.cs" />
-    <Compile Include="Extensions\CrustalResourceHandler.cs" />
+    <Compile Include="Resources\AtmosphericFloatCurves.cs" />
+    <Compile Include="Resources\CrustalResource.cs" />
+    <Compile Include="Resources\CrustalResourceHandler.cs" />
+    <Compile Include="Resources\MagneticFieldDefinition.cs" />
     <Compile Include="Extensions\Numbers.cs" />
-    <Compile Include="Extensions\OceanicResource.cs" />
-    <Compile Include="Extensions\OceanicResourceHandler.cs" />
+    <Compile Include="Resources\MagneticFieldDefinitionsHandler.cs" />
+    <Compile Include="Resources\OceanicResource.cs" />
+    <Compile Include="Resources\OceanicResourceHandler.cs" />
     <Compile Include="Extensions\OrbitExtensions.cs" />
-    <Compile Include="Extensions\AtmosphericResourceHandler.cs" />
-    <Compile Include="Extensions\AtmosphericResource.cs" />
+    <Compile Include="Resources\AtmosphericResourceHandler.cs" />
+    <Compile Include="Resources\AtmosphericResource.cs" />
     <Compile Include="Extensions\ParseTools.cs" />
     <Compile Include="Extensions\PartExtensions.cs" />
-    <Compile Include="Extensions\PartResourceLibraryExtension.cs" />
     <Compile Include="Extensions\ThermalSourceSearchResult.cs" />
     <Compile Include="Beamedpower\BeamConfiguration.cs" />
     <Compile Include="Beamedpower\BeamGenerator.cs" />
     <Compile Include="Beamedpower\BandwidthConverter.cs" />
+    <Compile Include="Extensions\Vector3dExtension.cs" />
     <Compile Include="IUpgradeableModule.cs" />
-    <Compile Include="Powermanagement\ORSResourceManager.cs" />
-    <Compile Include="Powermanagement\ORSResourceOvermanager.cs" />
-    <Compile Include="Powermanagement\ORSResourceSuppliable.cs" />
-    <Compile Include="Powermanagement\ORSResourceSuppliableModule.cs" />
-    <Compile Include="Powermanagement\ORSResourceSupplier.cs" />
+    <Compile Include="Powermanagement\ResourceManager.cs" />
+    <Compile Include="Powermanagement\ResourceOvermanager.cs" />
+    <Compile Include="Powermanagement\IResourceSuppliable.cs" />
+    <Compile Include="Powermanagement\ResourceSuppliableModule.cs" />
+    <Compile Include="Powermanagement\IResourceSupplier.cs" />
     <Compile Include="Powermanagement\SupplyPriorityManager.cs" />
     <Compile Include="Propulsion\AlcubierreDrive.cs" />
     <Compile Include="Propulsion\EngineECU2.cs" />
@@ -132,6 +96,8 @@
     <Compile Include="Propulsion\DeadalusEngineController.cs" />
     <Compile Include="Propulsion\VistaEngineControllerAdvanced2.cs" />
     <Compile Include="Reactors\Interfaces\IElectricPowerSource.cs" />
+    <Compile Include="Reactors\InterstellarFissionDP.cs" />
+    <Compile Include="Reactors\InterstellarFissionPB.cs" />
     <Compile Include="Refinery\AluminiumElectrolyser.cs" />
     <Compile Include="Collectors\AntimatterCollector.cs" />
     <Compile Include="Refinery\AntimatterFactory.cs" />
@@ -159,9 +125,8 @@
     <Compile Include="Refinery\PeroxideProcess.cs" />
     <Compile Include="Reactors\Interfaces\IChargedParticleSource.cs" />
     <Compile Include="Reactors\InterstellarCatalysedFissionFusion.cs" />
-    <Compile Include="Extensions\InterstellarCelestialBodyExtensions.cs" />
+    <Compile Include="Extensions\CelestialBodyExtensions.cs" />
     <Compile Include="Reactors\InterstellarFissionMSRGC.cs" />
-    <Compile Include="Reactors\InterstellarFissionPBDP.cs" />
     <Compile Include="Reactors\InterstellarFusionReactor.cs" />
     <Compile Include="Reactors\InterstellarInertialConfinementReactor.cs" />
     <Compile Include="Propulsion\ElectricEngineControllerFX.cs" />
@@ -172,10 +137,10 @@
     <Compile Include="Science\FNLCMassSpectrometer.cs" />
     <Compile Include="Science\FNMassSpectrometer.cs" />
     <Compile Include="Storage\FNModuleCryostat.cs" />
+    <Compile Include="Wasteheat\FNFissionGeneratorAdapter.cs" />
     <Compile Include="Wasteheat\FNModulePreecooler.cs" />
     <Compile Include="Science\DTMagnetometer.cs" />
     <Compile Include="Reactors\FNAntimatterReactor.cs" />
-    <Compile Include="Powermanagement\FNResourceOvermanager.cs" />
     <Compile Include="Science\FNSeismicProbe.cs" />
     <Compile Include="Reactors\FNThermalHeatExchanger.cs" />
     <Compile Include="Refinery\InterstellarRefinery.cs" />
@@ -187,8 +152,6 @@
     <Compile Include="Reactors\InterstellarReactor.cs" />
     <Compile Include="Reactors\InterstellarTokomakFusionReator.cs" />
     <Compile Include="Collectors\ISRUScoop.cs" />
-    <Compile Include="Wasteheat\FNResourceManager.cs" />
-    <Compile Include="Powermanagement\FNResourceSuppliableModule.cs" />
     <Compile Include="Beamedpower\MicrowavePowerReceiver.cs" />
     <Compile Include="Beamedpower\MicrowavePowerTransmitter.cs" />
     <Compile Include="Beamedpower\MicrowaveRoute.cs" />
@@ -213,6 +176,7 @@
     <Compile Include="Beamedpower\VesselRelayPersistence.cs" />
     <Compile Include="Propulsion\VistaEngineController.cs" />
     <Compile Include="Wasteheat\FNRadiator.cs" />
+    <Compile Include="Wasteheat\FNGeneratorAdapter.cs" />
     <Compile Include="Wasteheat\FNSolarPanelWasteHeatModule.cs" />
     <Compile Include="Storage\AntimatterStorageTank.cs" />
     <Compile Include="Propulsion\ModuleSolarSail.cs" />

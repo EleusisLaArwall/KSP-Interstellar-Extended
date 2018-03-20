@@ -1,20 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
+using FNPlugin.Resources;
+using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class HaberProcess : RefineryActivityBase, IRefineryActivity
     {
-        protected double _hydrogen_density;
-        protected double _nitrogen_density;
-        protected double _ammonia_density;
+        double _hydrogen_density;
+        double _nitrogen_density;
+        double _ammonia_density;
 
-        protected double _hydrogen_consumption_rate;
-        protected double _ammonia_production_rate;
-        protected double _nitrogen_consumption_rate;
+        double _hydrogen_consumption_rate;
+        double _ammonia_production_rate;
+        double _nitrogen_consumption_rate;
 
         public RefineryType RefineryType { get { return RefineryType.synthesize; } }
 
@@ -85,22 +85,22 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Current Rate ", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_current_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_current_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Nitrogen Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_nitrogen_consumption_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_nitrogen_consumption_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_hydrogen_consumption_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_hydrogen_consumption_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Ammonia Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_ammonia_production_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_ammonia_production_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 

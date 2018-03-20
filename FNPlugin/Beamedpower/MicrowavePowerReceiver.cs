@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using FNPlugin.Propulsion;
@@ -47,7 +48,7 @@ namespace FNPlugin
 	class MicrowavePowerReceiverDish: MicrowavePowerReceiver  {} // tweakscales with exponent 2.25
 
 	[KSPModule("Beamed Power Receiver")]
-	class MicrowavePowerReceiver : FNResourceSuppliableModule, IPowerSource, IElectricPowerGeneratorSource // tweakscales with exponent 2.5
+    class MicrowavePowerReceiver : ResourceSuppliableModule, IPowerSource, IElectricPowerGeneratorSource // tweakscales with exponent 2.5
 	{
 		//Persistent True
 		[KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Bandwidth")]
@@ -136,11 +137,11 @@ namespace FNPlugin
 		public double solarFacingExponent = 1;
 
 		[KSPField]
-		public string animName;
+		public string animName= "";
 		[KSPField]
-		public string animTName;
+		public string animTName = "";
 		[KSPField]
-		public string animGenericName;
+		public string animGenericName = "";
 
 		[KSPField(isPersistant = false, guiActiveEditor = true, guiActive = true, guiName = "Receiver Diameter", guiUnits = " m")]
 		public float diameter = 1;
@@ -284,13 +285,14 @@ namespace FNPlugin
 		protected BaseField minimumWavelengthField;
 		protected BaseField solarFacingFactorField;
 		protected BaseField solarFluxField;
-		//protected BaseField toteffField;
+        protected ModuleResource mockInputResource;
+        //protected BaseField toteffField;
 
-		protected BaseField _radiusField;
+        protected BaseField _radiusField;
 		protected BaseField _coreTempereratureField;
 		protected BaseField _field_kerbalism_output;
 
-		protected BaseEvent _linkReceiverBaseEvent;
+        protected BaseEvent _linkReceiverBaseEvent;
 		protected BaseEvent _unlinkReceiverBaseEvent;
 		protected BaseEvent _activateReceiverBaseEvent;
 		protected BaseEvent _disableReceiverBaseEvent;
@@ -324,15 +326,16 @@ namespace FNPlugin
 		protected GUIStyle text_black_style;
 
 		private const int labelWidth = 200;
+        private const int wideLabelWidth = 275;
 		private const int valueWidthWide = 100;
 		private const int ValueWidthNormal = 65;
         private const int ValueWidthShort = 30;
 
 		// GUI elements declaration
 		private Rect windowPosition;
-		private int windowID;		
+		private int windowID;
 
-		public Part Part { get { return this.part; } }
+        public Part Part { get { return this.part; } }
 
 		public int ProviderPowerPriority { get { return 1; } }
 
@@ -356,7 +359,7 @@ namespace FNPlugin
                         ? 1 
                         : CheatOptions.IgnoreMaxTemperature 
 						    ? 1 
-						    : (1 - getResourceBarRatio(FNResourceManager.FNRESOURCE_WASTEHEAT)) 
+						    : (1 - getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT)) 
 					: 1; 
 			}
 		}
@@ -433,13 +436,13 @@ namespace FNPlugin
 
 		public IElectricPowerGeneratorSource ConnectedChargedParticleElectricGenerator { get; set; }
 
-        public void NotifyActiveThermalEnergyGenerator(double efficency, double power_ratio, ElectricGeneratorType generatorType)
+        public void NotifyActiveThermalEnergyGenerator(double efficency, double power_ratio)
         {
             currentIsThermalEnergyGeneratorEfficiency = efficency;
             currentGeneratorThermalEnergyRequestRatio = power_ratio;
         }
 
-		public void NotifyActiveChargedEnergyGenerator(double efficency, double power_ratio, ElectricGeneratorType generatorType) { }
+		public void NotifyActiveChargedEnergyGenerator(double efficency, double power_ratio) { }
 
 		public bool IsThermalSource
 		{
@@ -489,11 +492,6 @@ namespace FNPlugin
 			else
 				return 0;
 		}
-
-		protected PartResource wasteheatResource;
-		protected PartResource megajouleResource;
-		protected PartResource electricResource;
-		protected PartResource thermalResource;
 
 		protected Animation animation;
 		protected Animation animT;
@@ -623,7 +621,7 @@ namespace FNPlugin
 					waitForAnimationToComplete = true;
 					animatonDeployed = true;
 
-					if (animation[animName].normalizedTime == 1)
+					if (Math.Abs(animation[animName].normalizedTime - 1) < float.Epsilon)
 						animation[animName].normalizedTime = 0;
 
 					animation[animName].speed = 1;
@@ -766,7 +764,7 @@ namespace FNPlugin
 
 		public override void OnStart(PartModule.StartState state)
 		{
-			String[] resources_to_supply = { FNResourceManager.FNRESOURCE_MEGAJOULES, FNResourceManager.FNRESOURCE_WASTEHEAT, FNResourceManager.FNRESOURCE_THERMALPOWER };
+			String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES, ResourceManager.FNRESOURCE_WASTEHEAT, ResourceManager.FNRESOURCE_THERMALPOWER };
 
 			this.resources_to_supply = resources_to_supply;
 			base.OnStart(state);
@@ -846,7 +844,10 @@ namespace FNPlugin
 			deployableSolarPanel = part.FindModuleImplementing<ModuleDeployableSolarPanel>();
 			if (deployableSolarPanel != null)
 			{
-				try
+                mockInputResource = new ModuleResource();
+                mockInputResource.name = deployableSolarPanel.resourceName;
+                resHandler.inputResources.Add(mockInputResource);
+                try
 				{
 					deployableSolarPanel.Events["Extend"].guiActive = false;
 				}
@@ -911,11 +912,6 @@ namespace FNPlugin
 					((MicrowavePowerReceiver)(result.Source)).RegisterAsSlave(this);
 			}
 
-			wasteheatResource = part.Resources[FNResourceManager.FNRESOURCE_WASTEHEAT];
-			megajouleResource = part.Resources[FNResourceManager.FNRESOURCE_MEGAJOULES];
-			thermalResource = part.Resources[FNResourceManager.FNRESOURCE_THERMALPOWER];
-			electricResource = part.Resources[FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE];
-
 			// calculate WasteHeat Capacity
 			partBaseWasteheat = part.mass * 2.0e+5 * wasteHeatMultiplier;
 
@@ -971,13 +967,17 @@ namespace FNPlugin
 		{
 			try
 			{
-
+                var wasteheatResource = part.Resources[ResourceManager.FNRESOURCE_WASTEHEAT];
 				if (wasteheatResource != null && TimeWarp.fixedDeltaTime != previousDeltaTime)
 				{
 					var ratio = Math.Min(1, wasteheatResource.amount / wasteheatResource.maxAmount);
 					wasteheatResource.maxAmount = partBaseWasteheat * TimeWarp.fixedDeltaTime; ;
 					wasteheatResource.amount = wasteheatResource.maxAmount * ratio;
 				}
+
+                var thermalResource = part.Resources[ResourceManager.FNRESOURCE_THERMALPOWER];
+                var megajouleResource = part.Resources[ResourceManager.FNRESOURCE_MEGAJOULES];
+                var electricResource = part.Resources[ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE];
 
 				if (inputPower > 0)
 				{
@@ -987,7 +987,6 @@ namespace FNPlugin
 						thermalResource.maxAmount = inputPower * TimeWarp.fixedDeltaTime;
 						thermalResource.amount = thermalResource.maxAmount * ratio;
 					}
-
 					if (megajouleResource != null)
 					{
 						var ratio = Math.Min(1, megajouleResource.amount / megajouleResource.maxAmount);
@@ -1156,19 +1155,19 @@ namespace FNPlugin
 				bandWidthName = activeBandwidthConfiguration.bandwidthName;
 				selectedBandwidthConfiguration = 0;
 				var lowestWavelengthDifference = Math.Abs(currentWavelength - activeBandwidthConfiguration.TargetWavelength);
-				if (BandwidthConverters.Any())
+
+				if (!BandwidthConverters.Any()) return;
+
+				foreach (var currentConfig in BandwidthConverters)
 				{
-					foreach (var currentConfig in BandwidthConverters)
-					{
-						var configWaveLengthDifference = Math.Abs(currentWavelength - currentConfig.TargetWavelength);
-						if (configWaveLengthDifference < lowestWavelengthDifference)
-						{
-							activeBandwidthConfiguration = currentConfig;
-							lowestWavelengthDifference = configWaveLengthDifference;
-							selectedBandwidthConfiguration = BandwidthConverters.IndexOf(currentConfig);
-							bandWidthName = activeBandwidthConfiguration.bandwidthName;
-						}
-					}
+					var configWaveLengthDifference = Math.Abs(currentWavelength - currentConfig.TargetWavelength);
+
+					if (!(configWaveLengthDifference < lowestWavelengthDifference)) continue;
+
+					activeBandwidthConfiguration = currentConfig;
+					lowestWavelengthDifference = configWaveLengthDifference;
+					selectedBandwidthConfiguration = BandwidthConverters.IndexOf(currentConfig);
+					bandWidthName = activeBandwidthConfiguration.bandwidthName;
 				}
 			}
 			catch (Exception e)
@@ -1215,11 +1214,10 @@ namespace FNPlugin
 				bandWidthName = activeBandwidthConfiguration.bandwidthName;
 
 				// update wavelength we can receive
-				if (canSwitchBandwidthInEditor)
-				{
-					minimumWavelength = activeBandwidthConfiguration.minimumWavelength;
-					maximumWavelength = activeBandwidthConfiguration.maximumWavelength;
-				}
+				if (!canSwitchBandwidthInEditor) return;
+
+				minimumWavelength = activeBandwidthConfiguration.minimumWavelength;
+				maximumWavelength = activeBandwidthConfiguration.maximumWavelength;
 			}
 			catch (Exception e)
 			{
@@ -1257,22 +1255,20 @@ namespace FNPlugin
 					if (dynamic_pressure <= 0) return true;
 
 					var pressureLoad = dynamic_pressure / 1.4854428818159e-3 * 100;
-					if (pressureLoad > 100 * atmosphereToleranceModifier)
-						return false;
-					else
-						return true;
+
+					return !(pressureLoad > 100 * atmosphereToleranceModifier);
 				}
 			}
 		}
 
 		protected CelestialBody GetCurrentStar()
 		{
-			int Depth = 0;
+			var depth = 0;
 			var star = FlightGlobals.currentMainBody;
-			while ((Depth < 10) && (star.GetTemperature(0) < 2000))
+			while ((depth < 10) && (star.GetTemperature(0) < 2000))
 			{
 				star = star.referenceBody;
-				Depth++;
+				depth++;
 			}
 
 			if ((star.GetTemperature(0) < 2000) || (star.name == "Galactic Core"))
@@ -1283,8 +1279,8 @@ namespace FNPlugin
 
 		public override void OnUpdate()
 		{
-            bool transmitterOn = has_transmitter && (part_transmitter.IsEnabled || part_transmitter.relay);
-			bool canBeActive = CanBeActiveInAtmosphere;
+            var transmitterOn = has_transmitter && (part_transmitter.IsEnabled || part_transmitter.relay);
+			var canBeActive = CanBeActiveInAtmosphere;
 
 			_linkReceiverBaseEvent.active = canLinkup && !linkedForRelay && !receiverIsEnabled && !transmitterOn && canBeActive;
 			_unlinkReceiverBaseEvent.active = linkedForRelay;
@@ -1374,12 +1370,12 @@ namespace FNPlugin
 			{
 				if (localStar == null) return 0;
 
-				Vector3d dolarDirectionVector = (localStar.transform.position - vesselPosition).normalized;
+				Vector3d solarDirectionVector = (localStar.transform.position - vesselPosition).normalized;
 
 				 if (receiverType == 3) 
-					 return Math.Max(0, 1 - Vector3d.Dot(part.transform.forward, dolarDirectionVector)) / 2;
+					 return Math.Max(0, 1 - Vector3d.Dot(part.transform.forward, solarDirectionVector)) / 2;
 				 else
-					 return Math.Max(0, Vector3d.Dot(part.transform.up, dolarDirectionVector));
+					 return Math.Max(0, Vector3d.Dot(part.transform.up, solarDirectionVector));
 			}
 			catch (Exception e)
 			{
@@ -1399,25 +1395,33 @@ namespace FNPlugin
 			if (transmitterPresure == 0 && recieverPressure == 0)
 				return 1;
 
-			var atmosphereDepthInMeter = transmitterVessel.mainBody.atmosphereDepth;
+			var atmosphereDepthInMeter = Math.Max(transmitterVessel.mainBody.atmosphereDepth, recieverVessel.mainBody.atmosphereDepth);
 
-			// calculate the weighted distance a signal has to travel through the atmosphere
+			// calculate the weighted distance a signal
 			double atmosphericDistance;
 			if (recieverVessel.mainBody == transmitterVessel.mainBody)
 			{
-				var recieverAltitudeModifier = atmosphereDepthInMeter > 0 && recieverVessel.altitude > atmosphereDepthInMeter ? atmosphereDepthInMeter / recieverVessel.altitude : 1;
-				var transmitterAltitudeModifier = atmosphereDepthInMeter > 0 && transmitterVessel.altitude > atmosphereDepthInMeter ? atmosphereDepthInMeter / transmitterVessel.altitude : 1;
+				var recieverAltitudeModifier = atmosphereDepthInMeter > 0 && recieverVessel.altitude > atmosphereDepthInMeter 
+					? atmosphereDepthInMeter / recieverVessel.altitude 
+					: 1;
+				var transmitterAltitudeModifier = atmosphereDepthInMeter > 0 && transmitterVessel.altitude > atmosphereDepthInMeter 
+					? atmosphereDepthInMeter / transmitterVessel.altitude 
+					: 1;
 				atmosphericDistance = transmitterAltitudeModifier * recieverAltitudeModifier * distanceInMeter;
 			}
 			else
 			{
-				// use fixed atmospheric distance when not in the same SOI
-				atmosphericDistance = atmosphereDepthInMeter * 2;
+				var altitudeModifier = transmitterPresure > 0 && recieverPressure > 0 && transmitterVessel.mainBody.atmosphereDepth > 0 && recieverVessel.mainBody.atmosphereDepth > 0
+					? Math.Max(0, 1 - transmitterVessel.altitude / transmitterVessel.mainBody.atmosphereDepth) 
+					+ Math.Max(0, 1 - recieverVessel.altitude / recieverVessel.mainBody.atmosphereDepth)
+					: 1;
+
+				atmosphericDistance = altitudeModifier * atmosphereDepthInMeter;
 			}
 
-			double absortion = Math.Pow(atmosphericDistance, Math.Sqrt(Math.Pow(transmitterPresure, 2) + Math.Pow(recieverPressure, 2))) / atmosphereDepthInMeter * waveLengthAbsorbtion;
+			var absortionRatio = Math.Pow(atmosphericDistance, Math.Sqrt(Math.Pow(transmitterPresure, 2) + Math.Pow(recieverPressure, 2))) / atmosphereDepthInMeter * waveLengthAbsorbtion;
 
-			return Math.Exp(-absortion);
+			return Math.Exp(-absortionRatio);
 		}
 
 		public void FixedUpdate()
@@ -1470,6 +1474,9 @@ namespace FNPlugin
 
             foreach (ReceivedPowerData receivedPowerData in received_power.Values)
 			{
+                if (receivedPowerData.Wavelengths == string.Empty)
+                    continue;
+
 				GUILayout.BeginHorizontal();
 				GUILayout.Label(receivedPowerData.Transmitter.Vessel.name, text_black_style, GUILayout.Width(labelWidth));
                 GUILayout.Label(receivedPowerData.Transmitter.Vessel.mainBody.name + " @ " + DistanceToText(receivedPowerData.Transmitter.Vessel.altitude), text_black_style, GUILayout.Width(labelWidth));
@@ -1493,46 +1500,24 @@ namespace FNPlugin
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Transmitter", bold_black_style, GUILayout.Width(labelWidth));
-                GUILayout.Label("Receiver Part", bold_black_style, GUILayout.Width(labelWidth));
-                GUILayout.Label("Relay Count", bold_black_style, GUILayout.Width(valueWidthWide));
-                GUILayout.Label("Relay 1", bold_black_style, GUILayout.Width(labelWidth));
-                GUILayout.Label("Relay 2", bold_black_style, GUILayout.Width(labelWidth));
-                GUILayout.Label("Relay 3", bold_black_style, GUILayout.Width(labelWidth));
+                GUILayout.Label("Relay Nr", bold_black_style, GUILayout.Width(ValueWidthShort));
+                GUILayout.Label("Relay Name", bold_black_style, GUILayout.Width(labelWidth));
+                GUILayout.Label("Relay Location", bold_black_style, GUILayout.Width(labelWidth));
+                GUILayout.Label("Max Capacity", bold_black_style, GUILayout.Width(ValueWidthNormal));
                 GUILayout.EndHorizontal();
 
                 foreach (ReceivedPowerData receivedPowerData in received_power.Values)
                 {
-                    if (receivedPowerData.Relays.Count > 0)
+                    for (int r = 0; r < receivedPowerData.Relays.Count; r++)
                     {
+                        var vesselPersistance = receivedPowerData.Relays[r];
+
                         GUILayout.BeginHorizontal();
+                        GUILayout.Label(r.ToString(), text_black_style, GUILayout.Width(ValueWidthShort));
                         GUILayout.Label(receivedPowerData.Transmitter.Vessel.name, text_black_style, GUILayout.Width(labelWidth));
-                        GUILayout.Label(receivedPowerData.Receiver.part.partInfo.title, text_black_style, GUILayout.Width(labelWidth));
-                        GUILayout.Label(receivedPowerData.Relays.Count.ToString(), text_black_style, GUILayout.Width(valueWidthWide));
-
-                        if (receivedPowerData.Relays.Count > 0)
-                        {
-                            var relaydata = receivedPowerData.Relays[0].Vessel.name + " (" + PowerToText(receivedPowerData.Relays[0].PowerCapacity);
-                            GUILayout.Label(relaydata, text_black_style, GUILayout.Width(labelWidth));
-                        }
-                        else
-                            GUILayout.Label("", text_black_style, GUILayout.Width(labelWidth));
-
-                        if (receivedPowerData.Relays.Count > 1)
-                        {
-                            var relaydata = receivedPowerData.Relays[1].Vessel.name + " (" + PowerToText(receivedPowerData.Relays[1].PowerCapacity);
-                            GUILayout.Label(relaydata, text_black_style, GUILayout.Width(labelWidth));
-                        }
-                        else
-                            GUILayout.Label("", text_black_style, GUILayout.Width(labelWidth));
-
-                        if (receivedPowerData.Relays.Count > 2)
-                        {
-                            var relaydata = receivedPowerData.Relays[2].Vessel.name + " (" + PowerToText(receivedPowerData.Relays[2].PowerCapacity);
-                            GUILayout.Label(relaydata, text_black_style, GUILayout.Width(labelWidth));
-                        }
-                        else
-                            GUILayout.Label("", text_black_style, GUILayout.Width(labelWidth));
-
+                        GUILayout.Label(vesselPersistance.Vessel.name, text_black_style, GUILayout.Width(wideLabelWidth));
+                        GUILayout.Label(vesselPersistance.Vessel.mainBody.name + " @ " + DistanceToText(vesselPersistance.Vessel.altitude), text_black_style, GUILayout.Width(labelWidth));
+                        GUILayout.Label(PowerToText(vesselPersistance.PowerCapacity * powerMult), GUILayout.Width(ValueWidthNormal));
                         GUILayout.EndHorizontal();
                     }
                 }
@@ -1577,7 +1562,7 @@ namespace FNPlugin
 
             StoreGeneratorRequests();
 
-			wasteheatRatio = CheatOptions.IgnoreMaxTemperature ? 0 : Math.Min(1, getResourceBarRatio(FNResourceManager.FNRESOURCE_WASTEHEAT));
+			wasteheatRatio = CheatOptions.IgnoreMaxTemperature ? 0 : Math.Min(1, getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT));
 
 			CalculateThermalSolarPower();
 
@@ -1644,13 +1629,13 @@ namespace FNPlugin
                             var thermalThrottleRatio = connectedEngines.Any(m => !m.RequiresChargedPower) ? connectedEngines.Where(m => !m.RequiresChargedPower).Max(e => e.CurrentThrottle) : 0;
                             var minimumRatio = Math.Max(storedGeneratorThermalEnergyRequestRatio, thermalThrottleRatio);
 
-                            var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_thermal_power_provided, total_thermal_power_provided, minimumRatio, FNResourceManager.FNRESOURCE_THERMALPOWER);
+                            var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_thermal_power_provided, total_thermal_power_provided, minimumRatio, ResourceManager.FNRESOURCE_THERMALPOWER);
 
                             if (!CheatOptions.IgnoreMaxTemperature)
                             {
                                 var supply_ratio = powerGeneratedResult.currentSupply / total_thermal_power_provided;
                                 var final_thermal_wasteheat = powerGeneratedResult.currentSupply + supply_ratio * total_conversion_waste_heat_production;
-                                supplyFNResourcePerSecondWithMax(final_thermal_wasteheat, total_beamed_power_max, FNResourceManager.FNRESOURCE_WASTEHEAT);
+                                supplyFNResourcePerSecondWithMax(final_thermal_wasteheat, total_beamed_power_max, ResourceManager.FNRESOURCE_WASTEHEAT);
                             }
 
                             thermal_power_ratio = total_thermal_power_available > 0 ? powerGeneratedResult.currentSupply / total_thermal_power_available : 0;
@@ -1689,23 +1674,22 @@ namespace FNPlugin
                         var total_beamed_electric_power_available = solarInputMegajoules * effectiveSolarThermalElectricEfficiency + total_beamed_power * effectiveBeamedPowerElectricEfficiency;
                         var total_beamed_electric_power_provided = Math.Min(MaximumRecievePower, total_beamed_electric_power_available);
 
-                        if (total_beamed_electric_power_provided > 0)
-                        {
-                            var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_beamed_electric_power_provided, total_beamed_electric_power_provided, 0, FNResourceManager.FNRESOURCE_MEGAJOULES);
-                            var supply_ratio = powerGeneratedResult.currentSupply / total_beamed_electric_power_provided;
+	                    if (!(total_beamed_electric_power_provided > 0)) return;
 
-                            // only generate wasteheat from beamed power when actualy using the energy
-                            if (!CheatOptions.IgnoreMaxTemperature)
-                            {
-                                var solarWasteheat = solarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
-                                supplyFNResourcePerSecond(supply_ratio * total_conversion_waste_heat_production + supply_ratio * solarWasteheat, FNResourceManager.FNRESOURCE_WASTEHEAT);
-                            }
+	                    var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_beamed_electric_power_provided, total_beamed_electric_power_provided, 0, ResourceManager.FNRESOURCE_MEGAJOULES);
+	                    var supply_ratio = powerGeneratedResult.currentSupply / total_beamed_electric_power_provided;
 
-                            foreach (var item in received_power)
-                            {
-                                item.Value.ConsumedPower = item.Value.AvailablePower * supply_ratio;
-                            }
-                        }
+	                    // only generate wasteheat from beamed power when actualy using the energy
+	                    if (!CheatOptions.IgnoreMaxTemperature)
+	                    {
+		                    var solarWasteheat = solarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
+		                    supplyFNResourcePerSecond(supply_ratio * total_conversion_waste_heat_production + supply_ratio * solarWasteheat, ResourceManager.FNRESOURCE_WASTEHEAT);
+	                    }
+
+	                    foreach (var item in received_power)
+	                    {
+		                    item.Value.ConsumedPower = item.Value.AvailablePower * supply_ratio;
+	                    }
                     }
 				}
 				else
@@ -1730,11 +1714,10 @@ namespace FNPlugin
 
 					received_power.Clear();
 
-					if (animT != null)
-					{
-						animT[animTName].normalizedTime = 0;
-						animT.Sample();
-					}
+					if (animT == null) return;
+
+					animT[animTName].normalizedTime = 0;
+					animT.Sample();
 				}
 			}
 			catch (Exception e)
@@ -1790,7 +1773,7 @@ namespace FNPlugin
                     beamedPowerData.IsAlive = false;
                 }
 
-                int activeSatsIncr = 0;
+                var activeSatsIncr = 0;
 
                 //loop all connected beamed power transmitters
                 foreach (var connectedTransmitterEntry in GetConnectedTransmitters())
@@ -1818,7 +1801,7 @@ namespace FNPlugin
                     beamedPowerData.Relays = keyvaluepair.Value;
 
                     // convert initial beamed power from source into MegaWatt
-                    beamedPowerData.TransmitPower = beamedPowerData.Transmitter.getAvailablePower() / 1000;
+                    beamedPowerData.TransmitPower = beamedPowerData.Transmitter.getAvailablePowerInMW();
 
                     beamedPowerData.NetworkCapacity = beamedPowerData.Relays != null && beamedPowerData.Relays.Count > 0
                         ? Math.Min(beamedPowerData.TransmitPower, beamedPowerData.Relays.Min(m => m.PowerCapacity))
@@ -1833,7 +1816,7 @@ namespace FNPlugin
                     // initialize remaining power
                     beamedPowerData.RemainingPower = beamedPowerData.NetworkPower;
 
-                    foreach (WaveLengthData powerBeam in beamedPowerData.Transmitter.SupportedTransmitWavelengths)
+                    foreach (var powerBeam in beamedPowerData.Transmitter.SupportedTransmitWavelengths)
                     {
                         // select active or compatible brandWith Converter
                         var selectedBrandWith = canSwitchBandwidthInEditor
@@ -1858,7 +1841,7 @@ namespace FNPlugin
 
                         // take into account maximum route capacity
                         var beamNetworkPower = beamedPowerData.Relays != null && beamedPowerData.Relays.Count > 0
-                            ? Math.Min(remainingPowerInBeam, beamedPowerData.Relays.Min(m => m.PowerCapacity))
+                            ? Math.Min(remainingPowerInBeam, beamedPowerData.Relays.Min(m => m.PowerCapacity) * powerMult)
                             : remainingPowerInBeam;
 
                         // substract from remaining power 
@@ -1878,9 +1861,9 @@ namespace FNPlugin
                         var efficiency_fraction = efficiencyPercentage / 100;
 
                         // limit by amount of beampower the reciever is able to process
-                        double satPower = Math.Min(currentRecievalPower, beamNetworkPower * efficiency_fraction);
-                        double satPowerMax = Math.Min(maximumRecievalPower, beamNetworkPower * efficiency_fraction);
-                        double satWasteheat = Math.Min(currentRecievalPower, beamNetworkPower * (1 - efficiency_fraction));
+                        var satPower = Math.Min(currentRecievalPower, beamNetworkPower * efficiency_fraction);
+                        var satPowerMax = Math.Min(maximumRecievalPower, beamNetworkPower * efficiency_fraction);
+                        var satWasteheat = Math.Min(currentRecievalPower, beamNetworkPower * (1 - efficiency_fraction));
 
                         // generate conversion wasteheat
                         total_conversion_waste_heat_production += satPower * (1 - efficiency_fraction);
@@ -1896,18 +1879,17 @@ namespace FNPlugin
                         total_beamed_power_max += satPowerMax;
                         total_beamed_wasteheat += satWasteheat;
 
-                        if (satPower > 0)
-                        {
-                            activeSatsIncr++;
-                            if (beamedPowerData.Relays != null)
-                            {
-                                foreach (var relay in beamedPowerData.Relays)
-                                {
-                                    usedRelays.Add(relay);
-                                }
-                                networkDepth = Math.Max(networkDepth, beamedPowerData.Relays.Count);
-                            }
-                        }
+	                    if (!(satPower > 0)) continue;
+
+	                    activeSatsIncr++;
+
+	                    if (beamedPowerData.Relays == null) continue;
+
+	                    foreach (var relay in beamedPowerData.Relays)
+	                    {
+		                    usedRelays.Add(relay);
+	                    }
+	                    networkDepth = Math.Max(networkDepth, beamedPowerData.Relays.Count);
                     }
                 }
 
@@ -1949,8 +1931,8 @@ namespace FNPlugin
 		{
 			if (alternatorRatio == 0)
 				return;
-			
-			supplyFNResourceFixed(alternatorRatio * powerInputMegajoules * TimeWarp.fixedDeltaTime / 1000, FNResourceManager.FNRESOURCE_MEGAJOULES);
+
+			supplyFNResourcePerSecond(alternatorRatio * powerInputMegajoules / 1000, ResourceManager.FNRESOURCE_MEGAJOULES);
 		}
 
 		private void ProcesSolarCellEnergy()
@@ -1960,11 +1942,18 @@ namespace FNPlugin
 
 			// readout kerbalism solar power output so we can remove it
 			if (_field_kerbalism_output != null)
-				kerbalismPowerOutput = _field_kerbalism_output.GetValue<double>(warpfixer);
+            {
+                // if GUI is inactive, then Panel doesn't produce power since Kerbalism doesn't reset the value on occlusion
+                // to be fixed in Kerbalism!
+                kerbalismPowerOutput = _field_kerbalism_output.guiActive == true ? _field_kerbalism_output.GetValue<double>(warpfixer) : 0;
+            }
 
-			flowRate = deployableSolarPanel.flowRate > 0
-				? deployableSolarPanel.flowRate
-				: deployableSolarPanel.chargeRate * deployableSolarPanel._flowRate;
+            // solarPanel.resHandler.outputResource[0].rate is zeroed by Kerbalism, flowRate is bogus.
+            // So we need to assume that Kerbalism Power Output is ok (if present),
+            // since calculating output from flowRate (or _flowRate) will not be possible.
+            flowRate = kerbalismPowerOutput > 0 ? kerbalismPowerOutput :
+                deployableSolarPanel.flowRate > 0 ? deployableSolarPanel.flowRate :
+                deployableSolarPanel.chargeRate * deployableSolarPanel._flowRate;
 
 			flowRateQueue.Enqueue(flowRate);
 
@@ -1979,21 +1968,19 @@ namespace FNPlugin
 				? Math.Max(stabalizedFlowRate, deployableSolarPanel.chargeRate * deployableSolarPanel._distMult * deployableSolarPanel._efficMult)
 				: stabalizedFlowRate;
 
-			// extract power otherwise we end up with double power
-			var power_reduction = deployableSolarPanel.flowRate > 0 ? deployableSolarPanel.flowRate : kerbalismPowerOutput;
-
-			if (deployableSolarPanel.resourceName == FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE)
+            // extract power otherwise we end up with double power
+            if (deployableSolarPanel.resourceName == ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE)
 			{
-				part.RequestResource(FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, power_reduction * TimeWarp.fixedDeltaTime);
+                mockInputResource.rate = flowRate;
 
 				if (stabalizedFlowRate > 0)
-					stabalizedFlowRate /= 1000;
+					stabalizedFlowRate *= 0.001;
 				if (maxSupply > 0)
-					maxSupply /= 1000;
+					maxSupply *= 0.001;
 			}
-			else if (deployableSolarPanel.resourceName == FNResourceManager.FNRESOURCE_MEGAJOULES)
+			else if (deployableSolarPanel.resourceName == ResourceManager.FNRESOURCE_MEGAJOULES)
 			{
-				part.RequestResource(FNResourceManager.FNRESOURCE_MEGAJOULES, power_reduction * TimeWarp.fixedDeltaTime);
+                mockInputResource.rate = flowRate;
 			}
 			else
 			{
@@ -2002,7 +1989,7 @@ namespace FNPlugin
 			}
 
 			if (stabalizedFlowRate > 0)
-				supplyFNResourcePerSecondWithMax(stabalizedFlowRate, maxSupply, FNResourceManager.FNRESOURCE_MEGAJOULES);
+				supplyFNResourcePerSecondWithMax(stabalizedFlowRate, maxSupply, ResourceManager.FNRESOURCE_MEGAJOULES);
 		}
 
 		public double MaxStableMegaWattPower
@@ -2020,9 +2007,9 @@ namespace FNPlugin
 			return ThermalPower;
 		}
 
-		public double GetRadius()
+		public double Radius
 		{
-			return radius;
+            get { return radius; }
 		}
 
 		public bool isActive()
@@ -2126,46 +2113,41 @@ namespace FNPlugin
 			return ComputeFacingFactor(PluginHelper.getVesselPos(transmitterVessel), this.vessel.transform.position);
 		}
 
-		protected double ComputeFacingFactor(Vector3 transmitPosition, Vector3 receiverPosition)
+		protected double ComputeFacingFactor(Vector3d transmitPosition, Vector3d receiverPosition)
 		{
 			double facingFactor;
 			Vector3d directionVector = (transmitPosition - receiverPosition).normalized;
 
-
-			if (receiverType == 6) 
-			{
-				facingFactor = Math.Min(1, Math.Abs(Vector3d.Dot(part.transform.forward, directionVector)));
-			}
-			else if( receiverType == 5)
-			{
-				//Scale energy reception based on angle of reciever to transmitter from bottom
-				facingFactor = Math.Max(0, -Vector3d.Dot(part.transform.up, directionVector));
-			}
-			else if (receiverType == 4) // used by single pivoting solar arrays
-			{
-				facingFactor = Math.Min(1 -Math.Abs(Vector3d.Dot(part.transform.right, directionVector)), 1);
-			}
-			else if (receiverType == 3)
-			{
-				//Scale energy reception based on angle of reciever to transmitter from back
-				facingFactor = Math.Max(0, -Vector3d.Dot(part.transform.forward, directionVector));
-			}
-			else if (receiverType == 2)
-			{
-				// get the best result of inline and directed reciever
-				facingFactor = Math.Min(1 - Math.Abs(Vector3d.Dot(part.transform.up, directionVector)), 1);
-			}
-			else if (receiverType == 1)
-			{
-				// recieve from sides
-				facingFactor = Math.Min(1 - Math.Abs(Vector3d.Dot(part.transform.up, directionVector)), 1);
-			}
-			else // receiverType == 0
-			{
-				//Scale energy reception based on angle of reciever to transmitter from top
-				facingFactor = Math.Max(0, Vector3d.Dot(part.transform.up, directionVector));
-			}
-
+            switch (receiverType)
+            {
+                case 1:
+                    // recieve from sides
+                    facingFactor = Math.Min(1 - Math.Abs(Vector3d.Dot(part.transform.up, directionVector)), 1);
+                    break;
+                case 2:
+                    // get the best result of inline and directed reciever
+                    facingFactor = Math.Min(1 - Math.Abs(Vector3d.Dot(part.transform.up, directionVector)), 1);
+                    break;
+                case 3:
+                    //Scale energy reception based on angle of reciever to transmitter from back
+                    facingFactor = Math.Max(0, -Vector3d.Dot(part.transform.forward, directionVector));
+                    break;
+                case 4:
+                    // used by single pivoting solar arrays
+                    facingFactor = Math.Min(1 - Math.Abs(Vector3d.Dot(part.transform.right, directionVector)), 1);
+                    break;
+                case 5:
+                    //Scale energy reception based on angle of reciever to transmitter from bottom
+                    facingFactor = Math.Max(0, -Vector3d.Dot(part.transform.up, directionVector));
+                    break;
+                case 6:
+                    facingFactor = Math.Min(1, Math.Abs(Vector3d.Dot(part.transform.forward, directionVector)));
+                    break;
+                default:
+                    //Scale energy reception based on angle of reciever to transmitter from top
+                    facingFactor = Math.Max(0, Vector3d.Dot(part.transform.up, directionVector));
+                    break;
+            }
 
 			if (facingFactor > facingThreshold)
 				facingFactor = Math.Pow(facingFactor, facingSurfaceExponent);
@@ -2196,26 +2178,25 @@ namespace FNPlugin
 
 			var transmittersToCheck = new List<VesselMicrowavePersistence>();//stores all transmiters to which we want to connect
 
-			double recieverAtmosphericPresure = FlightGlobals.getStaticPressure(this.vessel.transform.position) / 100;
+			var recieverAtmosphericPresure = FlightGlobals.getStaticPressure(vessel.transform.position) * 0.01;
 
 			foreach (VesselMicrowavePersistence transmitter in MicrowaveSources.instance.globalTransmitters.Values)
 			{
+                //ignore if no power or transmitter is on the same vessel
+                if (transmitter.Vessel == vessel)
+                {
+                    //Debug.Log("[KSPI] - Transmitter vessel is equal to receiver vessel");
+                    continue;
+                }
+
 				//first check for direct connection from current vessel to transmitters, will always be optimal
-				if (transmitter.getAvailablePower() <= 0)
+                if (!transmitter.HasPower)
 				{
 					Debug.Log("[KSPI] - Transmitter vessel has no power available");
 					continue;
 				}
 
-				//ignore if no power or transmitter is on the same vessel
-				if (transmitter.Vessel == vessel)
-				{
-					//Debug.Log("[KSPI] - Transmitter vessel is equal to receiver vessel");
-					continue;
-				}
-
-				bool hasLineOfSight = PluginHelper.HasLineOfSightWith(this.vessel, transmitter.Vessel);
-				if (hasLineOfSight)
+				if (PluginHelper.HasLineOfSightWith(this.vessel, transmitter.Vessel))
 				{
                     double facingFactor = ComputeFacingFactor(transmitter.Vessel);
                     if (facingFactor <= 0)
@@ -2224,24 +2205,24 @@ namespace FNPlugin
 					var possibleWavelengths = new List<MicrowaveRoute>();
 					double distanceInMeter = ComputeDistance(this.vessel, transmitter.Vessel);
 
-					double transmitterAtmosphericPresure = FlightGlobals.getStaticPressure(transmitter.Vessel.transform.position) / 100;
+					double transmitterAtmosphericPresure = FlightGlobals.getStaticPressure(transmitter.Vessel.transform.position) * 0.01;
 
 					foreach (WaveLengthData wavelenghtData in transmitter.SupportedTransmitWavelengths)
 					{
 						if (wavelenghtData.wavelength.NotWithin(this.maximumWavelength, this.minimumWavelength))
 							continue;
 
-						double spotsize = ComputeSpotSize(wavelenghtData, distanceInMeter, transmitter.Aperture, this.vessel, transmitter.Vessel);
+						var spotsize = ComputeSpotSize(wavelenghtData, distanceInMeter, transmitter.Aperture, this.vessel, transmitter.Vessel);
 
 						double distanceFacingEfficiency = ComputeDistanceFacingEfficiency(spotsize, facingFactor, this.diameter);
+
 						double atmosphereEfficency = GetAtmosphericEfficiency(transmitterAtmosphericPresure, recieverAtmosphericPresure, wavelenghtData.atmosphericAbsorption, distanceInMeter, this.vessel, transmitter.Vessel);
 						double transmitterEfficency = distanceFacingEfficiency * atmosphereEfficency;
 
 						possibleWavelengths.Add(new MicrowaveRoute(transmitterEfficency, distanceInMeter, facingFactor, spotsize, wavelenghtData)); 
 					}
 
-					var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null : 
-						possibleWavelengths.FirstOrDefault(m => m.Efficiency ==  possibleWavelengths.Max(n => n.Efficiency));
+					var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null : possibleWavelengths.FirstOrDefault(m => m.Efficiency == possibleWavelengths.Max(n => n.Efficiency));
 
 					if (mostEfficientWavelength != null)
 					{
@@ -2267,12 +2248,12 @@ namespace FNPlugin
 
 				if (PluginHelper.HasLineOfSightWith(this.vessel, relay.Vessel))
 				{
-                    double facingFactor = ComputeFacingFactor(relay.Vessel);
+                    var facingFactor = ComputeFacingFactor(relay.Vessel);
                     if (facingFactor <= 0)
                         continue;
 
 					double distanceInMeter = ComputeDistance(this.vessel, relay.Vessel);
-					double transmitterAtmosphericPresure = FlightGlobals.getStaticPressure(relay.Vessel.transform.position) / 100;
+					double transmitterAtmosphericPresure = FlightGlobals.getStaticPressure(relay.Vessel.transform.position) * 0.01;
 
                     var possibleWavelengths = new List<MicrowaveRoute>();
 
@@ -2290,8 +2271,7 @@ namespace FNPlugin
 						possibleWavelengths.Add(new MicrowaveRoute(transmitterEfficency, distanceInMeter, facingFactor, spotsize, wavelenghtData));
 					}
 
-					var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null :
-						possibleWavelengths.SingleOrDefault(m => m.Efficiency == possibleWavelengths.Max(n => n.Efficiency));
+					var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null : possibleWavelengths.FirstOrDefault(m => m.Efficiency == possibleWavelengths.Max(n => n.Efficiency));
 
 					if (mostEfficientWavelength != null)
 					{
@@ -2367,30 +2347,28 @@ namespace FNPlugin
 								possibleWavelengths.Add(new MicrowaveRoute(efficiencyForRoute, newDistance, relayRouteFacingFactor, spotsize, transmitterWavelenghtData, relayPersistance));
 							}
 
-							 var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null :
-									possibleWavelengths.SingleOrDefault(m => m.Efficiency == possibleWavelengths.Max(n => n.Efficiency));
+							 var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null : possibleWavelengths.FirstOrDefault(m => m.Efficiency == possibleWavelengths.Max(n => n.Efficiency));
 
-							if (mostEfficientWavelength != null)
+							if (mostEfficientWavelength == null) continue;
+
+							//this will return true if there is already a route to this transmitter
+							MicrowaveRoute currentOptimalRoute;
+							if (transmitterRouteDictionary.TryGetValue(transmitterToCheck, out currentOptimalRoute))
 							{
-								//this will return true if there is already a route to this transmitter
-								MicrowaveRoute currentOptimalRoute;
-								if (transmitterRouteDictionary.TryGetValue(transmitterToCheck, out currentOptimalRoute))
+								if (currentOptimalRoute.Efficiency < mostEfficientWavelength.Efficiency)
 								{
-									if (currentOptimalRoute.Efficiency < mostEfficientWavelength.Efficiency)
-									{
-										//if route using this relay is better then replace the old route
-										transmitterRouteDictionary[transmitterToCheck] = mostEfficientWavelength;
-									}
-								}
-								else
-								{
-									//there is no other route to this transmitter yet known so algorithm puts this one as optimal
+									//if route using this relay is better then replace the old route
 									transmitterRouteDictionary[transmitterToCheck] = mostEfficientWavelength;
 								}
 							}
+							else
+							{
+								//there is no other route to this transmitter yet known so algorithm puts this one as optimal
+								transmitterRouteDictionary[transmitterToCheck] = mostEfficientWavelength;
+							}
 						}
 
-						for (int r = 0; r < relaysToCheck.Count; r++)
+						for (var r = 0; r < relaysToCheck.Count; r++)
 						{
 							var nextRelay = relaysToCheck[r];
 							if (nextRelay == relayPersistance) continue;
@@ -2413,8 +2391,7 @@ namespace FNPlugin
 								possibleWavelengths.Add(new MicrowaveRoute(efficiencyForRoute, relayToNextRelayDistance, relayRouteFacingFactor, spotsize, transmitterWavelenghtData, relayPersistance));
 							}
 
-							var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null :
-								possibleWavelengths.SingleOrDefault(m => m.Efficiency == possibleWavelengths.Max(n => n.Efficiency));
+							var mostEfficientWavelength = possibleWavelengths.Count == 0 ? null : possibleWavelengths.FirstOrDefault(m => m.Efficiency == possibleWavelengths.Max(n => n.Efficiency));
 
 							if (mostEfficientWavelength != null)
 							{

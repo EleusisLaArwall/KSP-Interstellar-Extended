@@ -5,7 +5,7 @@ using KSP.UI.Screens.Flight.Dialogs;
 
 namespace FNPlugin
 {
-    class ModuleModableScienceGenerator : FNResourceSuppliableModule, IScienceDataContainer
+    class ModuleModableScienceGenerator : ResourceSuppliableModule, IScienceDataContainer
     {
         [KSPField(isPersistant = false)]
         public bool canDeploy = false;
@@ -29,15 +29,15 @@ namespace FNPlugin
         public bool data_gend = false;
 
         [KSPField(isPersistant = false)]
-        public bool rerunnable;
+        public bool rerunnable = false;
         [KSPField(isPersistant = false)]
-        public string deployEventName;
+        public string deployEventName = "";
         [KSPField(isPersistant = false)]
-        public string reviewEventName;
+        public string reviewEventName = "";
         [KSPField(isPersistant = false)]
-        public string resetEventName;
+        public string resetEventName = "";
         [KSPField(isPersistant = false)]
-        public string experimentID;
+        public string experimentID = "";
 
         protected ScienceData science_data;
 
@@ -162,9 +162,6 @@ namespace FNPlugin
             else
                 return new ScienceData[0];
         }
-
-
-
 
         public void ReviewDataItem(ScienceData science_data)
         {

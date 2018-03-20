@@ -12,7 +12,7 @@ namespace FNPlugin
     }
 
     [KSPModule("Solar Panel Adapter")]
-	class FNSolarPanelWasteHeatModule : FNResourceSuppliableModule 
+    class FNSolarPanelWasteHeatModule : ResourceSuppliableModule 
     {
         [KSPField(isPersistant = false, guiActiveEditor = false, guiActive = true,  guiName = "Solar current power", guiUnits = " MW", guiFormat="F5")]
         public double megaJouleSolarPowerSupply;
@@ -28,10 +28,9 @@ namespace FNPlugin
         private ModuleDeployableSolarPanel solarPanel;
         private PartResourceDefinition outputDefinition;
         private resourceType outputType = 0;
-        private PartResource megajoulePartResource;
-        private PartResource electricChargePartResource;
         private BaseField _field_kerbalism_output;
         private PartModule warpfixer;
+        private ModuleResource mockInputResource;
 
         private bool active = false;
         private float previousDeltaTime;
@@ -59,7 +58,7 @@ namespace FNPlugin
 
                 part.force_activate();
 
-                String[] resources_to_supply = { FNResourceManager.FNRESOURCE_MEGAJOULES };
+                String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES };
                 this.resources_to_supply = resources_to_supply;
                 base.OnStart(state);
 
@@ -69,21 +68,21 @@ namespace FNPlugin
 
                 if (solarPanel == null) return;
 
-                if (solarPanel.resourceName == FNResourceManager.FNRESOURCE_MEGAJOULES)
+                if (solarPanel.resourceName == ResourceManager.FNRESOURCE_MEGAJOULES)
                 {
                     outputType = resourceType.megajoule;
 
-                    megajoulePartResource = part.Resources[FNResourceManager.FNRESOURCE_MEGAJOULES];
+                    var megajoulePartResource = part.Resources[ResourceManager.FNRESOURCE_MEGAJOULES];
                     if (megajoulePartResource != null)
                     {
                         fixedMegajouleBufferSize = megajoulePartResource.maxAmount * 50;
                     }
                 }
-                else if (solarPanel.resourceName == FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE)
+                else if (solarPanel.resourceName == ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE)
                 {
                     outputType = resourceType.electricCharge;
 
-                    electricChargePartResource = part.Resources[FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE];
+                    var electricChargePartResource = part.Resources[ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE];
                     if (electricChargePartResource != null)
                     {
                         fixedElectricChargeBufferSize = electricChargePartResource.maxAmount * 50;
@@ -91,6 +90,10 @@ namespace FNPlugin
                 }
                 else
                     outputType = resourceType.other;
+
+                mockInputResource = new ModuleResource();
+                mockInputResource.name = solarPanel.resourceName;
+                resHandler.inputResources.Add(mockInputResource);
 
                 outputDefinition = PartResourceLibrary.Instance.GetDefinition(solarPanel.resourceName);
             }
@@ -160,8 +163,7 @@ namespace FNPlugin
 
                 if (outputType == resourceType.other) return;
 
-
-
+                var megajoulePartResource = part.Resources[ResourceManager.FNRESOURCE_MEGAJOULES];
                 if (megajoulePartResource != null && fixedMegajouleBufferSize > 0 && TimeWarp.fixedDeltaTime != previousDeltaTime)
                 {
                     double requiredMegawattCapacity = fixedMegajouleBufferSize * TimeWarp.fixedDeltaTime;
@@ -174,6 +176,7 @@ namespace FNPlugin
                         : Math.Max(0, Math.Min(requiredMegawattCapacity, ratio * requiredMegawattCapacity));
                 }
 
+                var electricChargePartResource = part.Resources[ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE];
                 if (electricChargePartResource != null && fixedElectricChargeBufferSize > 0 && TimeWarp.fixedDeltaTime != previousDeltaTime)
                 {
                     double requiredElectricChargeCapacity = fixedElectricChargeBufferSize * TimeWarp.fixedDeltaTime;
@@ -187,28 +190,33 @@ namespace FNPlugin
                 }
                 previousDeltaTime = TimeWarp.fixedDeltaTime;
 
-                double solar_rate = solarPanel.flowRate > 0 
-                    ? solarPanel.flowRate
-                    : solarPanel.panelType == ModuleDeployableSolarPanel.PanelType.FLAT 
-                        ? solarPanel._flowRate 
-                        : solarPanel._flowRate * solarPanel.chargeRate;
+                // readout kerbalism solar power output so we use it
+                if (_field_kerbalism_output != null)
+                {
+                    // if GUI is inactive, then Panel doesn't produce power since Kerbalism doesn't reset the value on occlusion
+                    // to be fixed in Kerbalism!
+                    kerbalismPowerOutput = _field_kerbalism_output.guiActive == true ? _field_kerbalism_output.GetValue<double>(warpfixer) : 0;
+                }
+
+                // solarPanel.resHandler.outputResource[0].rate is zeroed by Kerbalism, flowRate is bogus.
+                // So we need to assume that Kerbalism Power Output is ok (if present),
+                // since calculating output from flowRate (or _flowRate) will not be possible.
+                double solar_rate = kerbalismPowerOutput > 0 ? kerbalismPowerOutput : 
+                    solarPanel.flowRate > 0 ? solarPanel.flowRate :
+                    solarPanel.panelType == ModuleDeployableSolarPanel.PanelType.FLAT ? solarPanel._flowRate :
+                    solarPanel._flowRate * solarPanel.chargeRate;
 
                 double maxSupply = solarPanel._distMult > 0
                     ? solarPanel.chargeRate * solarPanel._distMult * solarPanel._efficMult 
                     : solar_rate;
 
-                // readout kerbalism solar power output so we can remove it
-                if (_field_kerbalism_output != null)
-                    kerbalismPowerOutput = _field_kerbalism_output.GetValue<double>(warpfixer);
-
                 // extract power otherwise we end up with double power
-                var power_reduction = solarPanel.flowRate > 0 ? solarPanel.flowRate : kerbalismPowerOutput;
-                part.RequestResource(outputDefinition.id, power_reduction * TimeWarp.fixedDeltaTime);
+                mockInputResource.rate = solar_rate;
 
                 solar_supply = outputType == resourceType.megajoule ? solar_rate : solar_rate / 1000;
                 solar_maxSupply = outputType == resourceType.megajoule ? maxSupply : maxSupply / 1000;
 
-                megaJouleSolarPowerSupply = supplyFNResourcePerSecondWithMax(solar_supply, solar_maxSupply, FNResourceManager.FNRESOURCE_MEGAJOULES);
+                megaJouleSolarPowerSupply = supplyFNResourcePerSecondWithMax(solar_supply, solar_maxSupply, ResourceManager.FNRESOURCE_MEGAJOULES);
             }
             catch (Exception e)
             {

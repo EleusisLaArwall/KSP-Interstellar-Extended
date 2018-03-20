@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
+using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
@@ -14,33 +13,33 @@ namespace FNPlugin.Refinery
         const double hydrogenMassByFraction = (2 * 1.008) / (44.01 + (2 * 1.008));
         const double dioxideMassByFraction = 1 - hydrogenMassByFraction;
        
-        protected double _fixedConsumptionRate;
-        protected double _consumptionStorageRatio;
+        double _fixedConsumptionRate;
+        double _consumptionStorageRatio;
 
-        protected double _water_consumption_rate;
-        protected double _monoxide_consumption_rate;
-        protected double _hydrogen_production_rate;
-        protected double _dioxide_production_rate;
+        double _water_consumption_rate;
+        double _monoxide_consumption_rate;
+        double _hydrogen_production_rate;
+        double _dioxide_production_rate;
 
-        protected string _waterResourceName;
-        protected string _monoxideResourceName;
-        protected string _dioxideResourceName;
-        protected string _hydrogenResourceName;
+        string _waterResourceName;
+        string _monoxideResourceName;
+        string _dioxideResourceName;
+        string _hydrogenResourceName;
 
-        protected double _water_density;
-        protected double _dioxide_density;
-        protected double _hydrogen_density;
-        protected double _monoxide_density;
+        double _water_density;
+        double _dioxide_density;
+        double _hydrogen_density;
+        double _monoxide_density;
 
-        protected double _availableWaterMass;
-        protected double _availableMonoxideMass;
-        protected double _spareRoomDioxideMass;
-        protected double _spareRoomHydrogenMass;
+        double _availableWaterMass;
+        double _availableMonoxideMass;
+        double _spareRoomDioxideMass;
+        double _spareRoomHydrogenMass;
 
-        protected double _maxCapacityWaterMass;
-        protected double _maxCapacityDioxideMass;
-        protected double _maxCapacityMonoxideMass;
-        protected double _maxCapacityHydrogenMass;
+        double _maxCapacityWaterMass;
+        double _maxCapacityDioxideMass;
+        double _maxCapacityMonoxideMass;
+        double _maxCapacityHydrogenMass;
 
         public RefineryType RefineryType { get { return RefineryType.synthesize; } }
 
@@ -150,7 +149,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Current Consumption", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((_fixedConsumptionRate / TimeWarp.fixedDeltaTime * GameConstants.HOUR_SECONDS).ToString("0.0000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((_fixedConsumptionRate / TimeWarp.fixedDeltaTime * GameConstants.SECONDS_IN_HOUR).ToString("0.0000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -165,7 +164,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Water Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_water_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_water_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -175,7 +174,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("CarbonMonoxide Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_monoxide_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_monoxide_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -185,7 +184,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("CarbonDioxide Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_dioxide_production_rate * GameConstants.HOUR_SECONDS).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_dioxide_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -195,7 +194,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_dioxide_production_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_dioxide_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 
