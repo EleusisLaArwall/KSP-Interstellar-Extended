@@ -7,11 +7,11 @@ namespace FNPlugin
     {
         // Persistent False
         [KSPField(isPersistant = false)]
-        public double decayConstant = 0;
+        public double decayConstant;
         [KSPField(isPersistant = false)]
-        public string resourceName = "";
+        public string resourceName;
         [KSPField(isPersistant = false)]
-        public string decayProduct = "";
+        public string decayProduct;
         [KSPField(isPersistant = false)]
         public double convFactor = 1;
 
@@ -20,6 +20,7 @@ namespace FNPlugin
 
         protected double density_rat = 1;
 
+        private PartResource decay_resource;
         private bool resourceDefinitionsContainDecayProduct;
 
         public override void OnStart(PartModule.StartState state)
@@ -29,9 +30,13 @@ namespace FNPlugin
             if (state == StartState.Editor)
                 return;
 
-            var decay_resource = part.Resources[resourceName];
-            if (decay_resource == null)
+            if (part.Resources.Contains(resourceName))
+                decay_resource = part.Resources[resourceName];
+            else
+            {
+                decay_resource = null;
                 return;
+            }
 
             resourceDefinitionsContainDecayProduct = PartResourceLibrary.Instance.resourceDefinitions.Contains(decayProduct);
             if (resourceDefinitionsContainDecayProduct)
@@ -54,7 +59,6 @@ namespace FNPlugin
 
         public void FixedUpdate()
         {
-            var decay_resource = part.Resources[resourceName];
             if (decay_resource == null) return;
 
             if (!HighLogic.LoadedSceneIsFlight) return;

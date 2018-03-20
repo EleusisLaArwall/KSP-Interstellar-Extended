@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class NuclearFuelReprocessor : RefineryActivityBase, IRefineryActivity
     {
-        double _fixed_current_rate = 0;
-        double _remaining_to_reprocess = 0;
-        double _remaining_seconds = 0;
+        protected double _fixed_current_rate = 0;
+        protected double _remaining_to_reprocess = 0;
+        protected double _remaining_seconds = 0;
         
         public RefineryType RefineryType { get { return RefineryType.synthesize; } }
 

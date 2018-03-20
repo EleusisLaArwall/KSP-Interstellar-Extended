@@ -4,7 +4,7 @@
 	{
 		string DisplayName { get; set; }
 
-		double ConsumeMegajoulesFixed(double powerRequest, double fixedDeltaTime);
+		double ConsumeMegajoulesFixed(double powerRequest);
 		double ConsumeMegajoulesPerSecond(double powerRequest);
 		string getResourceManagerDisplayName();
 	}

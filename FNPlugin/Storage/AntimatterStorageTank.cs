@@ -8,7 +8,7 @@ using TweakScale;
 namespace FNPlugin
 {
     [KSPModule("Antimatter Storage")]
-    class AntimatterStorageTank : ResourceSuppliableModule, IPartMassModifier, IRescalable<FNGenerator>, IPartCostModifier
+    class AntimatterStorageTank : FNResourceSuppliableModule, IPartMassModifier, IRescalable<FNGenerator> , IPartCostModifier
     {
         [KSPField(isPersistant = true)]
         public double chargestatus = 1000;
@@ -84,7 +84,6 @@ namespace FNPlugin
         //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiUnits = "%", guiName = "Anti Hydrogen"), UI_FloatRange(stepIncrement = 0.1f, maxValue = 100f, minValue = 0f)]
         //public float resourceFloatRange = 0;
 
-        bool isJustAboutToDie = false;
         bool showAntimatterFields;
         bool charging = false;
         bool should_charge = false;
@@ -101,6 +100,7 @@ namespace FNPlugin
         int temperature_explode_counter = 0;
 
         GameObject lightGameObject;
+        PartResource antimatterResource;
         ModuleAnimateGeneric deploymentAnimation;
         PartResourceDefinition antimatterDefinition;
         List<AntimatterStorageTank> attachedAntimatterTanks;
@@ -188,7 +188,6 @@ namespace FNPlugin
 
         public void doExplode(string reason = null)
         {
-            var antimatterResource = part.Resources[resourceName];
             if (antimatterResource == null || antimatterResource.amount <= minimimAnimatterAmount) return;
 
             if (antimatterResource.resourceName != resourceName)
@@ -237,7 +236,6 @@ namespace FNPlugin
             deploymentAnimation = part.FindModuleImplementing<ModuleAnimateGeneric>();
 
             part.OnJustAboutToBeDestroyed += OnJustAboutToBeDestroyed;
-            part.OnJustAboutToDie += OnJustAboutToDie; 
 
             antimatterDefinition = PartResourceLibrary.Instance.GetDefinition(resourceName);
 
@@ -245,7 +243,8 @@ namespace FNPlugin
 
             antimatterDensity = (double)(decimal)antimatterDefinition.density;
 
-            var antimatterResource = part.Resources[resourceName];
+            antimatterResource = part.Resources[resourceName];
+
             if (antimatterResource == null)
             {
                 var alternativeResource = part.Resources.OrderBy(m => m.maxAmount).FirstOrDefault();
@@ -285,55 +284,12 @@ namespace FNPlugin
             UpdateAttachedTanks();
         }
 
-        
-
-        void OnJustAboutToDie()
-        {
-            Debug.Log("[KSPI] - OnJustAboutToDie called on " + part.name);
-
-            isJustAboutToDie = true;
-        }
-
         void OnJustAboutToBeDestroyed()
         {
-            Debug.Log("[KSPI] - OnJustAboutToBeDestroyed called on " + part.name);
-
-            if (!isJustAboutToDie)
-            {
-                Debug.Log("[KSPI] - isJustAboutToDie == false");
+            if (antimatterResource == null || antimatterResource.resourceName != resourceName)
                 return;
-            }
 
-            var antimatterResource = part.Resources[resourceName];
-            if (antimatterResource == null)
-            {
-                Debug.Log("[KSPI] - antimatterResource == null");
-                return;
-            }
-
-            if (antimatterResource.resourceName != resourceName)
-            {
-                Debug.Log("[KSPI] - antimatterResource.resourceName != resourceName");
-                return;
-            }
-
-            if (!HighLogic.LoadedSceneIsFlight)
-            {
-                Debug.Log("[KSPI] - !HighLogic.LoadedSceneIsFlight");
-                return;
-            }
-
-            if (antimatterResource.amount <= minimimAnimatterAmount)
-            {
-                Debug.Log("[KSPI] - antimatterResource.amount <= minimimAnimatterAmount");
-                return;
-            }
-
-            if (!FlightGlobals.VesselsLoaded.Contains(this.vessel))
-            {
-                Debug.Log("[KSPI] - !FlightGlobals.VesselsLoaded.Contains(this.vessel)");
-                return;
-            }
+            if (!HighLogic.LoadedSceneIsFlight || antimatterResource.amount <= minimimAnimatterAmount || !FlightGlobals.VesselsLoaded.Contains(this.vessel)) return;
 
             if (part.temperature >= part.maxTemp)
                 doExplode("Antimatter container exploded because antimatter melted and breached containment");
@@ -383,7 +339,7 @@ namespace FNPlugin
 
         public void Update()
         {
-            var antimatterResource = part.Resources[resourceName];
+            antimatterResource = part.Resources[resourceName];
 
             showAntimatterFields = antimatterResource != null && antimatterResource.resourceName == resourceName;
 
@@ -404,9 +360,7 @@ namespace FNPlugin
             maxAmountStrField.guiActive = showAntimatterFields;
             maxAmountStrField.guiActiveEditor = showAntimatterFields;
 
-            capacityStr = PluginHelper.formatMassStr(antimatterResource.amount * antimatterDensity);
-            maxAmountStr = PluginHelper.formatMassStr(antimatterResource.maxAmount * antimatterDensity);
-
+            UpdateAmounts();
             UpdateTargetMass();
 
             var newRatio = antimatterResource.amount / antimatterResource.maxAmount;
@@ -457,6 +411,14 @@ namespace FNPlugin
                 else
                     statusStr = "No Power Required.";
             }
+
+            //UpdateAmounts();
+        }
+
+        private void UpdateAmounts()
+        {
+            capacityStr = formatMassStr(antimatterResource.amount * antimatterDensity);
+            maxAmountStr = formatMassStr(antimatterResource.maxAmount * antimatterDensity);
         }
 
         public void FixedUpdate()
@@ -466,7 +428,6 @@ namespace FNPlugin
 
             fixedDeltaTime = (double)(decimal)Math.Round(TimeWarp.fixedDeltaTime,7);
 
-            var antimatterResource = part.Resources[resourceName];
             if (antimatterResource == null)
                 return;
 
@@ -478,10 +439,6 @@ namespace FNPlugin
         [KSPEvent(guiActive = true, guiName = "Self Destruct", active = true)]
         public void SelfDestruct()
         {
-            var antimatterResource = part.Resources[resourceName];
-            if (antimatterResource == null)
-                return;
-
             if (HighLogic.LoadedSceneIsEditor || antimatterResource.amount <= minimimAnimatterAmount) return;
 
             doExplode("Antimatter container exploded because self destruct was activated");
@@ -489,7 +446,6 @@ namespace FNPlugin
 
         private void MaintainContainment()
         {
-            var antimatterResource = part.Resources[resourceName];
             if (chargestatus > 0 && antimatterResource.amount > minimimAnimatterAmount)
                 chargestatus -= fixedDeltaTime;
 
@@ -509,14 +465,14 @@ namespace FNPlugin
                 // first try to accespower  megajoules
                 double charge_to_add = CheatOptions.InfiniteElectricity
                     ? powerRequest
-                    : consumeFNResource(powerRequest, ResourceManager.FNRESOURCE_MEGAJOULES) * 1000 / effectivePowerNeeded;
+                    : consumeFNResource(powerRequest, FNResourceManager.FNRESOURCE_MEGAJOULES) * 1000 / effectivePowerNeeded;
 
                 chargestatus += charge_to_add;
 
                 // alternatively  just look for any reserves of stored megajoules
                 if (charge_to_add == 0 && effectivePowerNeeded > 0)
                 {
-                    double more_charge_to_add = part.RequestResource(ResourceManager.FNRESOURCE_MEGAJOULES, powerRequest) * 1000 / effectivePowerNeeded;
+                    double more_charge_to_add = part.RequestResource(FNResourceManager.FNRESOURCE_MEGAJOULES, powerRequest) * 1000 / effectivePowerNeeded;
 
                     charge_to_add += more_charge_to_add;
                     chargestatus += more_charge_to_add;
@@ -525,7 +481,7 @@ namespace FNPlugin
                 // if still not found any power attempt to find any electricc charge to survive
                 if (charge_to_add < fixedDeltaTime && effectivePowerNeeded > 0)
                 {
-                    double more_charge_to_add = part.RequestResource(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, mult * 2 * effectivePowerNeeded * fixedDeltaTime) / effectivePowerNeeded;
+                    double more_charge_to_add = part.RequestResource(FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, mult * 2 * effectivePowerNeeded * fixedDeltaTime) / effectivePowerNeeded;
                     charge_to_add += more_charge_to_add;
                     chargestatus += more_charge_to_add;
                 }
@@ -589,13 +545,13 @@ namespace FNPlugin
                 power_explode_counter = 0;
             }
 
+
             if (chargestatus > maxCharge)
                 chargestatus = maxCharge;
         }
 
         private void ExplodeContainer()
         {
-            var antimatterResource = part.Resources[resourceName];
             if (antimatterResource == null || antimatterResource.resourceName != resourceName)
                 return;
 
@@ -653,7 +609,23 @@ namespace FNPlugin
             return 1;
         }
 
-
+        protected string formatMassStr(double mass)
+        {
+            if (mass >= 1)
+                return (mass / 1e+0).ToString("0.0000000") + " t";
+            else if (mass >= 1e-3)
+                return (mass / 1e-3).ToString("0.0000000") + " kg";
+            else if (mass >= 1e-6)
+                return (mass / 1e-6).ToString("0.0000000") + " g";
+            else if (mass >= 1e-9)
+                return (mass / 1e-9).ToString("0.0000000") + " mg";
+            else if (mass >= 1e-12)
+                return (mass / 1e-12).ToString("0.000000") + " ug";
+            else if (mass >= 1e-15)
+                return (mass / 1e-15).ToString("0.0000000") + " ng";
+            else
+                return (mass / 1e-18).ToString("0.0000000") + " pg";
+        }
     }
 
 }

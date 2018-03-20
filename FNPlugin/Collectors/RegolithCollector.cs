@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Collectors
 {
-    class RegolithCollector : ResourceSuppliableModule
+    class RegolithCollector : FNResourceSuppliableModule
     {
         // Persistent True
         [KSPField(isPersistant = true)]
@@ -19,13 +20,13 @@ namespace FNPlugin.Collectors
         public double dLastRegolithConcentration;
 
         // Part properties
-        [KSPField(guiActiveEditor = true, guiName = "Drill size", guiUnits = " m\xB3")]
+        [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Drill size", guiUnits = " m\xB3")]
         public double drillSize = 0; // Volume of the collector's drill. Raise in part config (for larger drills) to make collecting faster.
-        [KSPField(guiActiveEditor = true, guiName = "Drill effectiveness", guiFormat = "P1")]
+        [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Drill effectiveness", guiFormat = "P1")]
         public double effectiveness = 1; // Effectiveness of the drill. Lower in part config (to a 0.5, for example) to slow down resource collecting.
-        [KSPField(guiActiveEditor = true, guiName = "MW Requirements", guiUnits = " MW")]
+        [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "MW Requirements", guiUnits = " MW")]
         public double mwRequirements = 1; // MW requirements of the drill. Affects heat produced.
-        [KSPField(guiActiveEditor = true, guiName = "Waste Heat Modifier", guiFormat = "P1")]
+        [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Waste Heat Modifier", guiFormat = "P1")]
         public double wasteHeatModifier = 1; // How much of the power requirements ends up as heat. Change in part cfg, treat as a percentage (1 = 100%). Higher modifier means more energy ends up as waste heat.
 
         // GUI
@@ -123,7 +124,7 @@ namespace FNPlugin.Collectors
             localStar = GetCurrentStar();
 
             // this bit goes through parts that contain animations and disables the "Status" field in GUI part window so that it's less crowded
-            var MAGlist = part.FindModulesImplementing<ModuleAnimateGeneric>();
+            List<ModuleAnimateGeneric> MAGlist = part.FindModulesImplementing<ModuleAnimateGeneric>();
             foreach (ModuleAnimateGeneric MAG in MAGlist)
             {
                 MAG.Fields["status"].guiActive = false;
@@ -361,7 +362,7 @@ namespace FNPlugin.Collectors
             dConcentrationRegolith = GetFinalConcentration();
 
             string strRegolithResourceName = InterstellarResourcesConfiguration.Instance.Regolith;
-            double dPowerRequirementsMW = PluginHelper.PowerConsumptionMultiplier * mwRequirements; // change the mwRequirements number in part config to change the power consumption
+            double dPowerRequirementsMW = (double)PluginHelper.PowerConsumptionMultiplier * mwRequirements; // change the mwRequirements number in part config to change the power consumption
 
             // gets density of the regolith resource
             dRegolithDensity = PartResourceLibrary.Instance.GetDefinition(strRegolithResourceName).density;
@@ -379,14 +380,14 @@ namespace FNPlugin.Collectors
             if (dConcentrationRegolith > 0 && (dRegolithSpareCapacity > 0))
             {
                 // calculate available power
-                double dPowerReceivedMW = Math.Max(consumeFNResource(dPowerRequirementsMW * TimeWarp.fixedDeltaTime, ResourceManager.FNRESOURCE_MEGAJOULES, TimeWarp.fixedDeltaTime), 0);
+                double dPowerReceivedMW = Math.Max((double)consumeFNResource(dPowerRequirementsMW * TimeWarp.fixedDeltaTime, FNResourceManager.FNRESOURCE_MEGAJOULES), 0);
                 double dNormalisedRevievedPowerMW = dPowerReceivedMW / TimeWarp.fixedDeltaTime;
 
                 // if power requirement sufficiently low, retreive power from KW source
                 if (dPowerRequirementsMW < 2 && dNormalisedRevievedPowerMW <= dPowerRequirementsMW)
                 {
                     double dRequiredKW = (dPowerRequirementsMW - dNormalisedRevievedPowerMW) * 1000;
-                    double dReceivedKW = part.RequestResource(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, dRequiredKW * TimeWarp.fixedDeltaTime);
+                    double dReceivedKW = part.RequestResource(FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, dRequiredKW * TimeWarp.fixedDeltaTime);
                     dPowerReceivedMW += (dReceivedKW / 1000);
                 }
 
@@ -424,6 +425,7 @@ namespace FNPlugin.Collectors
             }
 
             // this is the second important bit - do the actual change of the resource amount in the vessel
+            //dResourceFlow = (float)ORSHelper.fixedRequestResource(part, strRegolithResourceName, -dResourceChange);
             dResourceFlow = part.RequestResource(strRegolithResourceName, -dResourceChange);
 
             dResourceFlow = -dResourceFlow / TimeWarp.fixedDeltaTime;
@@ -437,7 +439,7 @@ namespace FNPlugin.Collectors
             if (!CheatOptions.IgnoreMaxTemperature) // is this player not using no-heat cheat mode?
             {
                 dTotalWasteHeatProduction = dPowerRequirementsMW * wasteHeatModifier; // calculate amount of heat to be produced
-                supplyFNResourcePerSecond(dTotalWasteHeatProduction, ResourceManager.FNRESOURCE_WASTEHEAT); // push the heat onto them
+                supplyFNResourceFixed(dTotalWasteHeatProduction * TimeWarp.fixedDeltaTime, FNResourceManager.FNRESOURCE_WASTEHEAT); // push the heat onto them
             }
             
         }

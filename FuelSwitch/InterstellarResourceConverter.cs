@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace InterstellarFuelSwitch
 {
     class ResourceStats
     {
         public PartResourceDefinition definition;
-        public double maxAmount = 0;
-        public double currentAmount = 0;
-        public double amountRatio = 0;
-        public double retrieveAmount = 0;
+        public double maxAmount;
+        public double currentAmount;
+        public double amountRatio;
+        public double retrieveAmount;
         public double transferRate = 1;
-        public double normalizedDensity = 0;
-        public double conversionRatio = 0;
+        public double normalizedDensity;
+        public double conversionRatio;
     }
 
     class InterstellarEquilibrium : InterstellarResourceConverter  { }
@@ -47,7 +46,7 @@ namespace InterstellarFuelSwitch
         [KSPField]
         public string secondaryResourceNames = string.Empty;
         [KSPField]
-        public double primaryConversionEnergyCost = 1000;
+        public double primaryConversionEnergyCost = 500;
         [KSPField]
         public double secondaryConversionEnergyCost = 1000;
         [KSPField]
@@ -127,34 +126,14 @@ namespace InterstellarFuelSwitch
 
             foreach (var resource in primaryResources)
             {
-                if (resource.definition.density > 0)
-                {
+                if (resource.definition.density > 0) 
                     resource.normalizedDensity = resource.definition.density;
-                }
-                else if (resource.definition.density == 0)
-                {
-                    Debug.LogWarning("[IFS] - " + resource + " have ZERO density");
-                }
-                else
-                {
-                    Debug.LogError("[IFS] - " + resource + " have " + resource.definition.density + " density");
-                }
             }
 
             foreach (var resource in secondaryResources)
             {
-                if (resource.definition.density > 0)
-                {
-                    resource.normalizedDensity = resource.definition.density;
-                }
-                else if (resource.definition.density == 0)
-                {
-                    Debug.LogWarning("[IFS] - " + resource + " have ZERO density");
-                }
-                else
-                {
-                    Debug.LogError("[IFS] - " + resource + " have " + resource.definition.density + " density");
-                }
+                if (resource.definition.density > 0) 
+                    resource.normalizedDensity = resource.definition.density; 
             }
 
             if (primaryResources.Count == 1 && secondaryResources.Count == 1)
@@ -164,31 +143,36 @@ namespace InterstellarFuelSwitch
 
                 if (primary.normalizedDensity > 0 && secondary.normalizedDensity > 0)
                 {
-                    primary.conversionRatio = secondary.normalizedDensity / primary.normalizedDensity;
                     secondary.conversionRatio = primary.normalizedDensity / secondary.normalizedDensity;
+                    primary.conversionRatio = secondary.normalizedDensity / primary.normalizedDensity;
                 }
                 else if (primary.definition.unitCost > 0 && secondary.definition.unitCost > 0)
                 {
-                    primary.conversionRatio = secondary.definition.unitCost / primary.definition.unitCost;
                     secondary.conversionRatio = primary.definition.unitCost / secondary.definition.unitCost;
+                    primary.conversionRatio = secondary.definition.unitCost / primary.definition.unitCost;
                 }
+				else if (primary.definition.volume > 0 && secondary.definition.volume > 0)
+				{
+					secondary.conversionRatio = primary.definition.volume / secondary.definition.volume;
+					primary.conversionRatio = secondary.definition.volume / primary.definition.volume;
+				}
 
-                if (primary.normalizedDensity == 0)
-                    primary.normalizedDensity = primaryNormalizedDensity;
-                if (secondary.normalizedDensity == 0)
-                    secondary.normalizedDensity = secondaryNormalizedDensity;
+				if (primary.normalizedDensity == 0)
+					primary.normalizedDensity = primaryNormalizedDensity;
+				if (secondary.normalizedDensity == 0)
+					secondary.normalizedDensity = secondaryNormalizedDensity;
 
-				if (secondary.conversionRatio == 0 && secondary.conversionRatio == 0)
+				if (secondary.conversionRatio  == 0 && secondary.conversionRatio == 0)
 				{
 					if (primary.normalizedDensity > 0 && secondary.normalizedDensity > 0)
 					{
-						primary.conversionRatio = secondary.normalizedDensity / primary.normalizedDensity;
-                        secondary.conversionRatio = primary.normalizedDensity / secondary.normalizedDensity;
+						secondary.conversionRatio = primary.normalizedDensity/secondary.normalizedDensity;
+						primary.conversionRatio = secondary.normalizedDensity/primary.normalizedDensity;
 					}
 					else
 					{
+						secondary.conversionRatio = 1;
 						primary.conversionRatio = 1;
-                        secondary.conversionRatio = 1;
 					}
 				}
             }

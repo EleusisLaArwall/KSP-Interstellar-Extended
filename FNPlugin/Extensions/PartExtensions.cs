@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace FNPlugin.Extensions
+namespace FNPlugin
 {
     public static class PartExtensions
     {

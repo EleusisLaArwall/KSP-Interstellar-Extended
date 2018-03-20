@@ -1,45 +1,44 @@
 ﻿using System;
 using System.Linq;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class PeroxideProcess : RefineryActivityBase, IRefineryActivity
     {
-        double _fixedConsumptionRate;
-        double _consumptionRate;
-        double _consumptionStorageRatio;
+        protected double _fixedConsumptionRate;
+        protected double _consumptionRate;
+        protected double _consumptionStorageRatio;
 
-        string _ammonia_resource_name;
-        string _hydrazine_resource_name;
-        string _hydrogen_peroxide_name;
-        string _water_resource_name;
+        protected string _ammonia_resource_name;
+        protected string _hydrazine_resource_name;
+        protected string _hydrogen_peroxide_name;
+        protected string _water_resource_name;
 
-        double _ammonia_density;
-        double _water_density;
-        double _hydrogen_peroxide_density;
-        double _hydrazine_density;
+        protected double _ammonia_density;
+        protected double _water_density;
+        protected double _hydrogen_peroxide_density;
+        protected double _hydrazine_density;
 
-        double _ammonia_consumption_rate;
-        double _hydrogen_peroxide_consumption_rate;
-        double _water_production_rate;
-        double _hydrazine_production_rate;
+        protected double _ammonia_consumption_rate;
+        protected double _hydrogen_peroxide_consumption_rate;
+        protected double _water_production_rate;
+        protected double _hydrazine_production_rate;
 
-        double _maxCapacityAmmoniaMass;
-        double _maxCapacityHydrogenPeroxideMass;
-        double _maxCapacityHydrazineMass;
-        double _maxCapacityWaterMass;
+        protected double _maxCapacityAmmoniaMass;
+        protected double _maxCapacityHydrogenPeroxideMass;
+        protected double _maxCapacityHydrazineMass;
+        protected double _maxCapacityWaterMass;
 
-        double _availableAmmoniaMass;
-        double _availableHydrogenPeroxideMass;
-        double _spareRoomHydrazineMass;
-        double _spareRoomWaterMass;
+        protected double _availableAmmoniaMass;
+        protected double _availableHydrogenPeroxideMass;
+        protected double _spareRoomHydrazineMass;
+        protected double _spareRoomWaterMass;
 
-        double ammona_mass_consumption_ratio = (2 * 35.04) / (2 * 35.04 + 34.0147);
-        double hydrogen_peroxide_mass_consumption_ratio = 34.0147 / (2 * 35.04 + 34.0147);
-        double hydrazine_mass_production_ratio = 32.04516 / (32.04516 + 2 * 18.01528);
-        double water_mass_production_ratio = (2 * 18.01528) / (32.04516 + 2 * 18.01528);
+        private double ammona_mass_consumption_ratio = (2 * 35.04) / (2 * 35.04 + 34.0147);
+        private double hydrogen_peroxide_mass_consumption_ratio = 34.0147 / (2 * 35.04 + 34.0147);
+        private double hydrazine_mass_production_ratio = 32.04516 / (32.04516 + 2 * 18.01528);
+        private double water_mass_production_ratio = (2 * 18.01528) / (32.04516 + 2 * 18.01528);
 
         public RefineryType RefineryType { get { return RefineryType.synthesize; } }
 
@@ -157,7 +156,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Current Consumption", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((_consumptionRate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((_consumptionRate * GameConstants.HOUR_SECONDS).ToString("0.00000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -172,7 +171,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Ammona Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_ammonia_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_ammonia_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -182,7 +181,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Peroxide Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_hydrogen_peroxide_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_hydrogen_peroxide_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -192,7 +191,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Water Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_water_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_water_production_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -202,7 +201,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrazine Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_hydrazine_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_hydrazine_production_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 

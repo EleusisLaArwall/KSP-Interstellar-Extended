@@ -25,7 +25,13 @@ namespace FNPlugin
         public bool useEffects = false;
 
         [KSPField]
-        public string flameoutEffectName = "";
+        string runningEffectName = "";
+        [KSPField]
+        string engageEffectName = "";
+        [KSPField]
+        string disengageEffectName = "";
+        [KSPField]
+        string flameoutEffectName = "";
 
         public bool rcs_active;
 
@@ -34,6 +40,20 @@ namespace FNPlugin
 
         [KSPField(guiActiveEditor = false)]
         public string RCS = "Enable/Disable for:";
+
+        //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "Yaw"), UI_Toggle(disabledText = "Off", enabledText = "On")]
+        //public bool enableYaw = true;
+        //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "Pitch"), UI_Toggle(disabledText = "Off", enabledText = "On")]
+        //public bool enablePitch = true;
+        //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "Roll"), UI_Toggle(disabledText = "Off", enabledText = "On")]
+        //public bool enableRoll = true;
+
+        //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "Port/Stbd"), UI_Toggle(disabledText = "Off", enabledText = "On")]
+        //public bool enableX = true;
+        //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "Dorsal/Ventral"), UI_Toggle(disabledText = "Off", enabledText = "On")]
+        //public bool enableY = true;
+        //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "Fore/Aft"), UI_Toggle(disabledText = "Off", enabledText = "On")]
+        //public bool enableZ = true;
 
         [KSPField]
         public bool useThrottle = false;
@@ -60,11 +80,17 @@ namespace FNPlugin
         public double fuelFlow = 0f;
 
 
+        //[KSPField(guiActive = true)]
         float inputAngularX;
+        //[KSPField(guiActive = true)]
         float inputAngularY;
+        //[KSPField(guiActive = true)]
         float inputAngularZ;
+        //[KSPField(guiActive = true)]
         float inputLinearX;
+        //[KSPField(guiActive = true)]
         float inputLinearY;
+        //[KSPField(guiActive = true)]
         float inputLinearZ;
 
         private Vector3 inputLinear;
@@ -278,6 +304,9 @@ namespace FNPlugin
                                 else
                                 {
                                     thrusterFX[i].Power = 0;
+
+                                    /*if (!(flameoutEffectName.Equals("")))
+                                        part.Effect(flameoutEffectName, 1.0f);*/
                                 }
                             }
                             else
@@ -286,6 +315,8 @@ namespace FNPlugin
                             }
                         }
                     }
+                    /*if(!(runningEffectName.Equals("")))
+                        part.Effect(runningEffectName, effectPower);*/
                 }
             }
             if (!success)

@@ -1,19 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class UF4Ammonolysiser : RefineryActivityBase, IRefineryActivity
     {
-        double _ammonia_density;
-        double _uranium_tetraflouride_density;
-        double _uranium_nitride_density;
+        protected double _ammonia_density;
+        protected double _uranium_tetraflouride_density;
+        protected double _uranium_nitride_density;
 
-        double _ammonia_consumption_rate;
-        double _uranium_tetraflouride_consumption_rate;
-        double _uranium_nitride_production_rate;
+        protected double _ammonia_consumption_rate;
+        protected double _uranium_tetraflouride_consumption_rate;
+        protected double _uranium_nitride_production_rate;
 
         public RefineryType RefineryType { get { return RefineryType.synthesize; } }
 
@@ -44,13 +45,13 @@ namespace FNPlugin.Refinery
         public void UpdateFrame(double rateMultiplier, double powerFraction, double productionModidier, bool allowOverflow, double fixedDeltaTime)
         {
             _current_power = PowerRequirements * rateMultiplier;
-            _current_rate = CurrentPower * GameConstants.baseUraniumAmmonolysisRate;
+            _current_rate = CurrentPower / GameConstants.baseUraniumAmmonolysisRate;
             double uf4persec = _current_rate * 1.24597 / _uranium_tetraflouride_density;
             double ammoniapersec = _current_rate * 0.901 / _ammonia_density;
-            _uranium_tetraflouride_consumption_rate = _part.RequestResource(InterstellarResourcesConfiguration.Instance.UraniumTetraflouride, uf4persec * fixedDeltaTime, ResourceFlowMode.ALL_VESSEL) * _uranium_tetraflouride_density / fixedDeltaTime;
-            _ammonia_consumption_rate = _part.RequestResource(InterstellarResourcesConfiguration.Instance.Ammonia, ammoniapersec * fixedDeltaTime, ResourceFlowMode.ALL_VESSEL) * _ammonia_density / fixedDeltaTime;
+            _uranium_tetraflouride_consumption_rate = _part.RequestResource(InterstellarResourcesConfiguration.Instance.UraniumTetraflouride, uf4persec * fixedDeltaTime, ResourceFlowMode.ALL_VESSEL)/_uranium_tetraflouride_density/fixedDeltaTime;
+            _ammonia_consumption_rate = _part.RequestResource(InterstellarResourcesConfiguration.Instance.Ammonia, ammoniapersec * fixedDeltaTime, ResourceFlowMode.ALL_VESSEL ) / _ammonia_density / fixedDeltaTime;
 
-            if (_ammonia_consumption_rate > 0 && _uranium_tetraflouride_consumption_rate > 0)
+            if(_ammonia_consumption_rate > 0 && _uranium_tetraflouride_consumption_rate > 0) 
                 _uranium_nitride_production_rate = -_part.RequestResource(InterstellarResourcesConfiguration.Instance.UraniumNitride, -_uranium_tetraflouride_consumption_rate / 1.24597 / _uranium_nitride_density * fixedDeltaTime, ResourceFlowMode.ALL_VESSEL) / fixedDeltaTime * _uranium_nitride_density;
 
             updateStatusMessage();
@@ -66,15 +67,15 @@ namespace FNPlugin.Refinery
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Ammona Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_ammonia_consumption_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_ammonia_consumption_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Uranium Tetraflouride Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_uranium_tetraflouride_consumption_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_uranium_tetraflouride_consumption_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Uranium Nitride Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(_uranium_nitride_production_rate * GameConstants.SECONDS_IN_HOUR + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(_uranium_nitride_production_rate * GameConstants.HOUR_SECONDS + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 

@@ -4,8 +4,7 @@
     {
         public double ProductionRate { get { return _current_rate; } }
 
-        double _efficiency = 0.01149;
-
+        protected double _efficiency = 0.01149;
         public double Efficiency { get { return _efficiency;}}
 
         PartResourceDefinition _antimatterDefinition;

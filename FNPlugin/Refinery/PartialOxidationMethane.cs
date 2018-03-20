@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
@@ -155,7 +156,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Overal Consumption", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((combined_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((combined_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.0000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -165,7 +166,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Oxygen Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_oxygen_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_oxygen_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -175,7 +176,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Methane Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_methane_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_methane_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -185,7 +186,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_hydrogen_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_hydrogen_production_rate * GameConstants.HOUR_SECONDS).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -195,7 +196,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Carbon Monoxide Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_monoxide_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_monoxide_production_rate * GameConstants.HOUR_SECONDS).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 

@@ -1,23 +1,23 @@
 ﻿using System;
-using KSP.Localization;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace FNPlugin.Refinery
 {
-    class AntimatterFactory : ResourceSuppliableModule
+    class AntimatterFactory : FNResourceSuppliableModule
     {
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = false), UI_Toggle(disabledText = "Off", enabledText = "On")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = false, guiName = "Producing"), UI_Toggle(disabledText = "Off", enabledText = "On")]
         public bool isActive = false;
-        [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_KSPIE_AntimatterFactory_powerPecentage"), UI_FloatRange(stepIncrement = 1f / 3f, maxValue = 100, minValue = 1)]
+        [KSPField(isPersistant = true, guiActive = true, guiName = "Power Percentage"), UI_FloatRange(stepIncrement = 1f/3f, maxValue = 100, minValue = 1)]
         public float powerPercentage = 100;
-
-        [KSPField]
-        public string activateTitle = "#LOC_KSPIE_AntimatterFactory_producePositron";
 
         [KSPField(isPersistant = true)]
         public double last_active_time = 0;
-        [KSPField(isPersistant = true)]
+        [KSPField(isPersistant = true, guiName = "Power Percentage")]
         public double electrical_power_ratio;
-        [KSPField(guiActive = true, guiName = "#LOC_KSPIE_AntimatterFactory_productionRate")]
+
+        [KSPField(guiActive = true, guiName = "Production Rate")]
         public string productionRateTxt;
 
         [KSPField]
@@ -31,7 +31,6 @@ namespace FNPlugin.Refinery
 
         AntimatterGenerator _generator;
         PartResourceDefinition _antimatterDefinition;
-        string disabledText;
 
         public override void OnStart(StartState state)
         {
@@ -40,10 +39,6 @@ namespace FNPlugin.Refinery
 
             if (state == StartState.Editor)
                 return;
-
-            disabledText = Localizer.Format("#LOC_KSPIE_AntimatterFactory_disabled");
-
-            Fields["isActive"].guiName = Localizer.Format(activateTitle);
 
             if (!isActive)
                 return;
@@ -59,7 +54,7 @@ namespace FNPlugin.Refinery
         {
             if (!isActive)
             {
-                productionRateTxt = disabledText;
+                productionRateTxt = "disabled";
                 return;
             }
 
@@ -88,21 +83,21 @@ namespace FNPlugin.Refinery
             if (!isActive)
                 return;
 
-            var availablePower = getAvailableResourceSupply(ResourceManager.FNRESOURCE_MEGAJOULES);
-            var resourceBarRatio = getResourceBarRatio(ResourceManager.FNRESOURCE_MEGAJOULES);
-            var effectiveResourceThrotling = resourceBarRatio > ResourceManager.ONE_THIRD ? 1 : resourceBarRatio * 3;
+            var availablePower = getAvailableResourceSupply(FNResourceManager.FNRESOURCE_MEGAJOULES);
+            var resourceBarRatio = getResourceBarRatio(FNResourceManager.FNRESOURCE_MEGAJOULES);
+            var effectiveResourceThrotling = resourceBarRatio > ORSResourceManager.ONE_THIRD ? 1 : resourceBarRatio * 3;
 
-            var energy_requested_in_megajoules = Math.Min(powerCapacity, effectiveResourceThrotling * availablePower * powerPercentage / 100d);
+            var energy_requested_in_megajoules = Math.Min(powerCapacity, TimeWarp.fixedDeltaTime * effectiveResourceThrotling * availablePower * powerPercentage / 100d);
 
             var energy_provided_in_megajoules = CheatOptions.InfiniteElectricity
                 ? energy_requested_in_megajoules
-                : consumeFNResourcePerSecond(energy_requested_in_megajoules, ResourceManager.FNRESOURCE_MEGAJOULES);
+                : consumeFNResource(energy_requested_in_megajoules, FNResourceManager.FNRESOURCE_MEGAJOULES);
 
-            electrical_power_ratio = energy_requested_in_megajoules > 0 ? energy_provided_in_megajoules / energy_requested_in_megajoules : 0;
+            electrical_power_ratio = energy_requested_in_megajoules > 0 ? energy_provided_in_megajoules / energy_requested_in_megajoules : 0; 
 
             _generator.Produce(energy_provided_in_megajoules);
 
-            productionRate = _generator.ProductionRate;
+            productionRate = _generator.ProductionRate / TimeWarp.fixedDeltaTime;
         }
     }
 }

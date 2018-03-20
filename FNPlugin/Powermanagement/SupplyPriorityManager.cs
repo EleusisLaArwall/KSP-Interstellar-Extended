@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FNPlugin
 {
-    class SupplyPriorityManager
+    public class SupplyPriorityManager
     {
         protected static Dictionary<Vessel, SupplyPriorityManager> supply_priority_managers = new Dictionary<Vessel,SupplyPriorityManager>();
 
@@ -26,7 +26,7 @@ namespace FNPlugin
             return manager;
         }
 
-        protected List<ResourceSuppliableModule> suppliable_modules = new List<ResourceSuppliableModule>();
+        protected List<ORSResourceSuppliableModule> suppliable_modules = new List<ORSResourceSuppliableModule>();
 
         public Vessel Vessel {get; private set;}
         public PartModule ProcessingPart { get; private set; }
@@ -42,7 +42,7 @@ namespace FNPlugin
             this.Vessel = vessel;
         }
 
-        public void Register(ResourceSuppliableModule suppliable)
+        public void Register(ORSResourceSuppliableModule suppliable)
         {
             if (!suppliable_modules.Contains(suppliable))
             {
@@ -50,7 +50,7 @@ namespace FNPlugin
             }
         }
 
-        public void Unregister(ResourceSuppliableModule suppliable)
+        public void Unregister(ORSResourceSuppliableModule suppliable)
         {
             if (!suppliable_modules.Contains(suppliable))
             {

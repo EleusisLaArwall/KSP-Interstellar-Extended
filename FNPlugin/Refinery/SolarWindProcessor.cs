@@ -1,51 +1,42 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class SolarWindProcessor : RefineryActivityBase, IRefineryActivity
     {
-        double _fixedConsumptionRate;
+        protected double _fixedConsumptionRate;
 
-        double _solar_wind_density;
-        double _hydrogen_density;
-        double _deuterium_density;
-        double _liquid_helium3_density;
-        double _liquid_helium4_density;
-        double _monoxide_density;
-        double _nitrogen_density;
-        double _neon_density;
+        protected double _solar_wind_density;
+        protected double _hydrogen_density;
+        protected double _deuterium_density;
+        protected double _liquid_helium3_density;
+        protected double _liquid_helium4_density;
+        protected double _monoxide_density;
+        protected double _nitrogen_density;
+        protected double _neon_density;
 
-        double _solar_wind_consumption_rate;
+        protected double _solar_wind_consumption_rate;
 
-        double _hydrogen_production_rate;
-        double _deuterium_production_rate;
-        double _liquid_helium3_production_rate;
-        double _liquid_helium4_production_rate;
-        double _monoxide_production_rate;
-        double _nitrogen_production_rate;
-        double _neon_production_rate;
-
-        string _solar_wind_resource_name;
-        string _hydrogen_resource_name;
-        string _deuterium_resource_name;
-        string _liquid_helium3_resource_name;
-        string _liquid_helium4_resource_name;
-        string _monoxide_resource_name;
-        string _nitrogen_resource_name;
-        string _neon_resource_name;
+        protected double _hydrogen_production_rate;
+        protected double _deuterium_production_rate;
+        protected double _liquid_helium3_production_rate;
+        protected double _liquid_helium4_production_rate;
+        protected double _monoxide_production_rate;
+        protected double _nitrogen_production_rate;
+        protected double _neon_production_rate;
 
         public RefineryType RefineryType { get { return RefineryType.cryogenics; } }
 
         public String ActivityName { get { return "Solar Wind Process"; } }
 
-        public bool HasActivityRequirements 
-        {
+        public bool HasActivityRequirements {
             get
             {
-                return _part.GetConnectedResources(_solar_wind_resource_name).Any(rs => rs.maxAmount > 0);
+                return _part.GetConnectedResources(_solar_wind_resource_name).Any(rs => rs.amount > 0);
             }
         }
 
@@ -53,6 +44,14 @@ namespace FNPlugin.Refinery
 
         public String Status { get { return String.Copy(_status); } }
 
+        protected string _solar_wind_resource_name;
+        protected string _hydrogen_resource_name;
+        protected string _deuterium_resource_name;
+        protected string _liquid_helium3_resource_name;
+        protected string _liquid_helium4_resource_name;
+        protected string _monoxide_resource_name;
+        protected string _nitrogen_resource_name;
+        protected string _neon_resource_name;
 
         public SolarWindProcessor(Part part)
         {
@@ -236,7 +235,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Solar Wind Consumption", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((((float)_solar_wind_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString()) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((((float)_solar_wind_consumption_rate * GameConstants.HOUR_SECONDS).ToString()) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -246,7 +245,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((float)_hydrogen_production_rate * GameConstants.SECONDS_IN_HOUR).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((float)_hydrogen_production_rate * GameConstants.HOUR_SECONDS).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -256,7 +255,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Deuterium Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((float)_deuterium_production_rate * GameConstants.SECONDS_IN_HOUR).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((float)_deuterium_production_rate * GameConstants.HOUR_SECONDS).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -266,7 +265,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Helium-3 Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((float)_liquid_helium3_production_rate * GameConstants.SECONDS_IN_HOUR).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((float)_liquid_helium3_production_rate * GameConstants.HOUR_SECONDS).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -276,7 +275,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Helium-4 Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((float)_liquid_helium4_production_rate * GameConstants.SECONDS_IN_HOUR).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((float)_liquid_helium4_production_rate * GameConstants.HOUR_SECONDS).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -286,7 +285,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Carbon Monoxide Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((float)_monoxide_production_rate * GameConstants.SECONDS_IN_HOUR).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((float)_monoxide_production_rate * GameConstants.HOUR_SECONDS).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -296,7 +295,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Nitrogen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((float)_nitrogen_production_rate * GameConstants.SECONDS_IN_HOUR).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((float)_nitrogen_production_rate * GameConstants.HOUR_SECONDS).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -306,7 +305,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Neon Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((float)_neon_production_rate * GameConstants.SECONDS_IN_HOUR).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((float)_neon_production_rate * GameConstants.HOUR_SECONDS).ToString() + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 
@@ -316,14 +315,11 @@ namespace FNPlugin.Refinery
                 _status = "Processing of Solar Wind Particles Ongoing";
             else if (CurrentPower <= 0.01*PowerRequirements)
                 _status = "Insufficient Power";
-            else if (_maxCapacitySolarWindMass <= float.MinValue)
-                _status = "No Solar Wind Particles Available";
             else
                 _status = "Insufficient Storage, try allowing overflow";
         }
 
-        public void PrintMissingResources() 
-        {
+        public void PrintMissingResources() {
             ScreenMessages.PostScreenMessage("Missing " + InterstellarResourcesConfiguration.Instance.SolarWind, 3.0f, ScreenMessageStyle.UPPER_CENTER);
         }
     }

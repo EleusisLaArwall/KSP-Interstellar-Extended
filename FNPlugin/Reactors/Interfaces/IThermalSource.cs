@@ -79,7 +79,7 @@ namespace FNPlugin
 
         bool IsVolatileSource { get; }
 
-        double Radius {get; }
+        double GetRadius();
 
         bool IsNuclear { get; }
 
@@ -111,9 +111,9 @@ namespace FNPlugin
 
         IElectricPowerGeneratorSource ConnectedChargedParticleElectricGenerator { get; set; }
 
-        void NotifyActiveThermalEnergyGenerator(double efficency, double power_ratio);
+        void NotifyActiveThermalEnergyGenerator(double efficency, double power_ratio, ElectricGeneratorType generatorType);
 
-        void NotifyActiveChargedEnergyGenerator(double efficency, double power_ratio);
+        void NotifyActiveChargedEnergyGenerator(double efficency, double power_ratio, ElectricGeneratorType generatorType);
 
         bool ShouldApplyBalance(ElectricGeneratorType generatorType);
 

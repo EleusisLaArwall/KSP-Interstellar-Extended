@@ -4,20 +4,21 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using TweakScale;
-using FNPlugin.Extensions;
 
 namespace FNPlugin
 {
+
     enum GenerationType { Mk1 = 0, Mk2 = 1, Mk3 = 2, Mk4 = 3, Mk5 = 4 }
 
-    abstract class EngineECU2 : ResourceSuppliableModule, IRescalable<EngineECU2>
+    abstract class EngineECU2 : FNResourceSuppliableModule, IRescalable<EngineECU2>
     {
-        [KSPField(guiActive = true, guiName = "Max Thrust", guiUnits = " kN", guiFormat = "F4")]
-        public double maximumThrust;
-
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Fuel Config")]
         [UI_ChooseOption(affectSymCounterparts = UI_Scene.All, scene = UI_Scene.All, suppressEditorShipModified = true)]
         public int selectedFuel = 0;
+
+        public bool hasMultipleConfigurations = false;
+        private UIPartActionWindow tweakableUI;
+        StartState CurState;
 
         // Persistant
         [KSPField(isPersistant = true)]
@@ -33,107 +34,83 @@ namespace FNPlugin
         [KSPField(isPersistant = true)]
         public string selectedTankName = "";
 
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 1")]
-        public string upgradeTechReq1;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 2")]
-        public string upgradeTechReq2;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 3")]
-        public string upgradeTechReq3;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 4")]
-        public string upgradeTechReq4;
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = true, guiName = "upgrade tech 1")]
+        public string upgradeTechReq = "advFusionReactions";
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = true, guiName = "upgrade tech 2")]
+        public string upgradeTechReq2 = "exoticReactions";
 
         // None Persistant 
-        [KSPField]
+        [KSPField(isPersistant = false)]
         public float minThrottleRatioMk1 = 0.2f;
-        [KSPField]
+        [KSPField(isPersistant = false)]
         public float minThrottleRatioMk2 = 0.1f;
-        [KSPField]
+        [KSPField(isPersistant = false)]
         public float minThrottleRatioMk3 = 0.05f;
-        [KSPField]
-        public float minThrottleRatioMk4 = 0.05f;
-        [KSPField]
-        public float minThrottleRatioMk5 = 0.05f;
 
-        [KSPField]
-        public double thrustmultiplier = 1;
-        [KSPField]
-        public bool isLoaded = false;
-        [KSPField]
-        public bool resourceSwitching = true;
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = true)]
+        public double thrustmultiplier;
 
-        [KSPField(guiActiveEditor = true)]
-        public float maxThrust = 150;
-        [KSPField(guiActiveEditor = true)]
-        public float maxThrustUpgraded1 = 300;
-        [KSPField(guiActiveEditor = true)]
-        public float maxThrustUpgraded2 = 500;
-        [KSPField( guiActiveEditor = true)]
-        public float maxThrustUpgraded3 = 800;
-        [KSPField( guiActiveEditor = true)]
-        public float maxThrustUpgraded4 = 1200;
+        [KSPField(isPersistant = false, guiActiveEditor = true)]
+        public float maxThrust = 75;
+        public double MaxThrust 
+        { 
+            get { return maxThrust * thrustMult(); } 
+        }
 
-        [KSPField]
+        [KSPField(isPersistant = false, guiActiveEditor = true)]
+        public float maxThrustUpgraded = 300;
+        public double MaxThrustUpgraded 
+        { 
+            get { return maxThrustUpgraded * thrustMult(); } 
+        }
+
+        [KSPField(isPersistant = false, guiActiveEditor = true)]
+        public float maxThrustUpgraded2 = 1200;
+        public double MaxThrustUpgraded2 
+        { 
+            get { return maxThrustUpgraded2 * thrustMult(); } 
+        }
+
+        [KSPField(isPersistant = false)]
         public double efficiency = 0.19;
-        [KSPField]
-        public double efficiencyUpgraded1 = 0.25;
-        [KSPField]
-        public double efficiencyUpgraded2 = 0.44;
-        [KSPField]
-        public double efficiencyUpgraded3 = 0.65;
-        [KSPField]
-        public double efficiencyUpgraded4 = 0.76;
+        [KSPField(isPersistant = false)]
+        public double efficiencyUpgraded = 0.38;
+        [KSPField(isPersistant = false)]
+        public double efficiencyUpgraded2 = 0.76;
+
+        [KSPField(isPersistant = false)]
+        public bool isLoaded = false;
 
         // Use for SETI Mode
-        [KSPField]
+        [KSPField(isPersistant = false)]
         public float maxTemp = 2500;
-        [KSPField]
+        [KSPField(isPersistant = false)]
         public float upgradeCost = 100;
 
-
-        [KSPField]
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Max Thrust", guiUnits = " kN", guiFormat = "F4")]
+        public double maximumThrust;
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Current Throtle", guiFormat = "F2")]
         public float throttle;
 
         public ModuleEngines curEngineT;
-        public bool hasMultipleConfigurations = false;
-
-        private IList<FuelConfiguration> _activeConfigurations;
-        private FuelConfiguration _currentActiveConfiguration;
-        private UIPartActionWindow tweakableUI;
-        private StartState CurState;
-
-        private UI_ChooseOption chooseOptionEditor;
-        private UI_ChooseOption chooseOptionFlight;
+        private FuelConfiguration activeConfiguration;
  
         public GenerationType EngineGenerationType { get; private set; }
-
-        public double MaxThrust {  get { return maxThrust * thrustMult(); } }
-        public double MaxThrustUpgraded1 { get { return maxThrustUpgraded1 * thrustMult(); } }
-        public double MaxThrustUpgraded2 { get { return maxThrustUpgraded2 * thrustMult(); } }
-        public double MaxThrustUpgraded3 { get { return maxThrustUpgraded3 * thrustMult(); } }
-        public double MaxThrustUpgraded4 { get { return maxThrustUpgraded4 * thrustMult(); } }
 
         public void DetermineTechLevel()
         {
             int numberOfUpgradeTechs = 1;
-            if (PluginHelper.upgradeAvailable(upgradeTechReq1))
+            if (PluginHelper.upgradeAvailable(upgradeTechReq))
                 numberOfUpgradeTechs++;
             if (PluginHelper.upgradeAvailable(upgradeTechReq2))
                 numberOfUpgradeTechs++;
-            if (PluginHelper.upgradeAvailable(upgradeTechReq3))
-                numberOfUpgradeTechs++;
-            if (PluginHelper.upgradeAvailable(upgradeTechReq4))
-                numberOfUpgradeTechs++;
 
-            if (numberOfUpgradeTechs == 5)
-                EngineGenerationType = GenerationType.Mk5;
-            else if (numberOfUpgradeTechs == 4)
-                EngineGenerationType = GenerationType.Mk4;
-            else if (numberOfUpgradeTechs == 3)
+            if (numberOfUpgradeTechs == 3)
                 EngineGenerationType = GenerationType.Mk3;
             else if (numberOfUpgradeTechs == 2)
                 EngineGenerationType = GenerationType.Mk2;
             else
-                EngineGenerationType = GenerationType.Mk1;
+                EngineGenerationType = GenerationType.Mk2;
         }
 
         [KSPEvent(active = true, advancedTweakable = true, guiActive = true, guiActiveEditor = false, name = "HideUsableFuelsToggle", guiName = "Hide Unusable Configurations")]
@@ -142,42 +119,38 @@ namespace FNPlugin
             hideEmpty = true;
             Events["ShowFuels"].active = hideEmpty; // will activate the event (i.e. show the gui button) if the process is not enabled
             Events["HideFuels"].active = !hideEmpty; // will show the button when the process IS enabled
-            //UpdateusefulConfigurations();
+            UpdateusefulConfigurations();
             InitializeFuelSelector();
-            Debug.Log("[KSPI] - HideFuels calls UpdateFuel");
             UpdateFuel();
         }
-
         [KSPEvent(active = false, advancedTweakable = true, guiActive = true, guiActiveEditor = false, name = "HideUsableFuelsToggle", guiName = "Show All Configurations")]
         public void ShowFuels()
         {
-            FuelConfiguration CurConfig = CurrentActiveConfiguration;
+            FuelConfiguration CurConfig = ActiveConfiguration;
             hideEmpty = false;
             Events["ShowFuels"].active = hideEmpty; // will activate the event (i.e. show the gui button) if the process is not enabled
             Events["HideFuels"].active = !hideEmpty; // will show the button when the process IS enabled
             selectedFuel = ActiveConfigurations.IndexOf(CurConfig);
             InitializeFuelSelector();
-            Debug.Log("[KSPI] - ShowFuels calls UpdateFuel");
             UpdateFuel();
-        }
 
+
+        }
         public void InitializeGUI()
         {
             InitializeFuelSelector();
             InitializeHideFuels();
         }
-
         private void InitializeFuelSelector()
         {
             Debug.Log("[KSPI] - Setup Fuels Configurations for " + part.partInfo.title);
 
             var chooseField = Fields["selectedFuel"];
-            chooseOptionEditor = chooseField.uiControlEditor as UI_ChooseOption;
-            chooseOptionFlight = chooseField.uiControlFlight as UI_ChooseOption;
+            var chooseOptionEditor = chooseField.uiControlEditor as UI_ChooseOption;
+            var chooseOptionFlight = chooseField.uiControlFlight as UI_ChooseOption;
 
-            _activeConfigurations = ActiveConfigurations;
 
-            if (_activeConfigurations.Count <= 1)
+            if (ActiveConfigurations.Count <= 1)
             {
                 chooseField.guiActive = false;
                 chooseField.guiActiveEditor = false;
@@ -187,45 +160,48 @@ namespace FNPlugin
             {
                 chooseField.guiActive = true;
                 chooseField.guiActiveEditor = true;
-                if (selectedFuel >= _activeConfigurations.Count) selectedFuel = _activeConfigurations.Count - 1;
-                _currentActiveConfiguration = _activeConfigurations[selectedFuel];
+                if (selectedFuel >= ActiveConfigurations.Count) selectedFuel = ActiveConfigurations.Count - 1;
+                activeConfiguration = ActiveConfigurations[selectedFuel];
             }
 
-            Debug.Log("[KSPI] - Selected Fuel # " + selectedFuel);
+            Debug.Log("Selected Fuel # " + selectedFuel);
 
-            var names = _activeConfigurations.Select(m => m.fuelConfigurationName).ToArray();
+            var names = ActiveConfigurations.Select(m => m.fuelConfigurationName).ToArray();
 
             chooseOptionEditor.options = names;
             chooseOptionFlight.options = names;
 
             // connect on change event
-            if (chooseField.guiActive) 
-                chooseOptionFlight.onFieldChanged = UpdateFlightGUI;
-            if (chooseField.guiActiveEditor) 
-                chooseOptionEditor.onFieldChanged = UpdateEditorGUI;
-            _currentActiveConfiguration = _activeConfigurations[selectedFuel];
+            if (chooseField.guiActive) chooseOptionFlight.onFieldChanged = UpdateFlightGUI;
+            if (chooseField.guiActiveEditor) chooseOptionEditor.onFieldChanged = UpdateEditorGUI;
+            activeConfiguration = ActiveConfigurations[selectedFuel];
+
         }
-
-
         private void InitializeHideFuels()
         {
             BaseEvent[] EventList = { Events["HideFuels"], Events["ShowFuels"] };
             foreach (BaseEvent akEvent in EventList)
             {
                 if (FuelConfigurations.Count <= 1)
+                {
                     akEvent.guiActive = false;
+                    //akEvent.guiActiveEditor = false;
+                }
                 else
+                {
                     akEvent.guiActive = true;
+                    //akEvent.guiActiveEditor = true;
+                }
+
             }
         }
 
-        public FuelConfiguration CurrentActiveConfiguration
+        public FuelConfiguration ActiveConfiguration
         {
             get
             {
-                if (_currentActiveConfiguration == null) 
-                    _currentActiveConfiguration = ActiveConfigurations[selectedFuel];
-                return _currentActiveConfiguration;
+                if (activeConfiguration == null) activeConfiguration = ActiveConfigurations[selectedFuel];
+                return activeConfiguration;
             }
         }
 
@@ -236,59 +212,59 @@ namespace FNPlugin
             get
             {
                 if (fuelConfigurations == null)
+                {
                     fuelConfigurations = part.FindModulesImplementing<FuelConfiguration>().Where(c => c.requiredTechLevel <= (int)EngineGenerationType).ToList();
+                }
                 return fuelConfigurations;
             }
         }
-
         private double thrustMult()
         {
-            return FuelConfigurations.Count > 0 ? CurrentActiveConfiguration.thrustMult : 1;
+            //thrustmultiplier = (FuelConfigurations.Count > 0 ? ActiveConfiguration.thrustMult : 1) * (scale == 0 ? 1 : Math.Pow(scale, 2));
+            thrustmultiplier = FuelConfigurations.Count > 0 ? ActiveConfiguration.thrustMult : 1;
+            return thrustmultiplier;
         }
+    
 
         private void UpdateEditorGUI(BaseField field, object oldFieldValueObj)
         {
-            Debug.Log("[KSPI] - Editor Gui Updated");
+            Debug.Log("Editor Gui Updated");
             UpdateFromGUI(field, oldFieldValueObj);
             selectedTank = selectedFuel;
             selectedTankName = FuelConfigurations[selectedFuel].ConfigName;
-            UpdateResources();           
+            UpdateResources();
+           
         }
-
         private void UpdateFlightGUI(BaseField field, object oldFieldValueObj)
         {
             UpdateFromGUI(field, oldFieldValueObj);
-            Debug.Log("[KSPI] - UpdateFlightGUI calls UpdateFuel");
             UpdateFuel();
         }
 
         public virtual void UpdateFuel(bool isEditor = false)
         {
-            Debug.Log("[KSPI] - Update Fuel with " + CurrentActiveConfiguration.fuelConfigurationName);
+            Debug.Log("Update Fuel");
 
             ConfigNode akPropellants = new ConfigNode();
+           
 
             int I = 0;
             int N = 0;
-            while (I < CurrentActiveConfiguration.Fuels.Length)
+
+            while (I < ActiveConfiguration.Fuels.Length)
             {
-                if (CurrentActiveConfiguration.Ratios[I] > 0)
-                {
-                    Debug.Log("[KSPI] - Load propellant " + CurrentActiveConfiguration.Fuels[I]);
-                    akPropellants.AddNode(LoadPropellant(CurrentActiveConfiguration.Fuels[I], CurrentActiveConfiguration.Ratios[I]));
-                }
-                else
-                    N++;
+                if (ActiveConfiguration.Ratios[I] > 0) akPropellants.AddNode(LoadPropellant(ActiveConfiguration.Fuels[I], ActiveConfiguration.Ratios[I]));
+                else N++;
                 I++;
             }
-            //if (N + 1 >= akConfig.Fuels.Length) 
-            //    Fields["selectedFuel"].guiActive = false;
+            if (N + 1 >= ActiveConfiguration.Fuels.Length) Fields["selectedFuel"].guiActive = false;
 
             akPropellants.AddValue("maxThrust", 1);
+
             akPropellants.AddValue("maxFuelFlow", 1);
 
             curEngineT.Load(akPropellants);
-            curEngineT.atmosphereCurve = CurrentActiveConfiguration.atmosphereCurve;
+            curEngineT.atmosphereCurve = ActiveConfiguration.atmosphereCurve;
             if (!isEditor)
             {
                 vessel.ClearStaging();
@@ -298,23 +274,21 @@ namespace FNPlugin
 
         private void UpdateResources()
         {
-            if (!resourceSwitching)
-                return;
-
-            Debug.Log("[KSPI] - Update Resources");
+            Debug.Log("Update Resources");
 
             ConfigNode akResources = new ConfigNode();
             FuelConfiguration akConfig = new FuelConfiguration();
-
             if (selectedTankName == "")
                 selectedTankName = FuelConfigurations[selectedTank].ConfigName;
-            else if (FuelConfigurations[selectedTank].ConfigName == selectedTankName)
+            else if
+                (FuelConfigurations[selectedTank].ConfigName == selectedTankName)
                 akConfig = FuelConfigurations[selectedTank];
             else
             {
                 selectedTank = FuelConfigurations.IndexOf(FuelConfigurations.FirstOrDefault(g => g.ConfigName == selectedTankName));
                 akConfig = FuelConfigurations[selectedTank];
             }
+
 
             int I = 0;
             int N = 0;
@@ -327,36 +301,38 @@ namespace FNPlugin
 
             part.Resources.Clear();
 
+            // part.SetupResources();
+
             I = 0;
             N = 0;
             while (I < akConfig.Fuels.Length)
             {
-                Debug.Log("[KSPI] - Resource: " + akConfig.Fuels[I] + " has a " + akConfig.MaxAmount[I] + " tank.");
+                Debug.Log("Resource: " + akConfig.Fuels[I] + " has a " + akConfig.MaxAmount[I] + " tank.");
                 if (akConfig.MaxAmount[I] > 0)
                 {
-                    Debug.Log("[KSPI] - Loaded Resource: " + akConfig.Fuels[I]);
+                    
                     part.AddResource(LoadResource(akConfig.Fuels[I], akConfig.Amount[I], akConfig.MaxAmount[I]));
                 }
                 else N++;
                 I++;
             }
 
-            if (N + 1 >= akConfig.Fuels.Length) 
-                Fields["selectedFuel"].guiActive = false;
+            if (N + 1 >= akConfig.Fuels.Length) Fields["selectedFuel"].guiActive = false;
 
-            Debug.Log("[KSPI] - New Fuels: " + akConfig.Fuels.Length);
+            Debug.Log("New Fuels: " + akConfig.Fuels.Length);
             if (tweakableUI == null)
                 tweakableUI = part.FindActionWindow();
             if (tweakableUI != null)
                 tweakableUI.displayDirty = true;
 
             //     curEngineT.Save(akResources);
-            Debug.Log("[KSPI] - Resources Updated");
-        }    
+            Debug.Log("Resources Updated");
+        }
+    
 
         private ConfigNode LoadPropellant(string akName, float akRatio)
         {
-            Debug.Log("[KSPI] - Name: " + akName);
+            Debug.Log("Name: " + akName);
             //    Debug.Log("Ratio: "+ akRatio);
 
             ConfigNode PropellantNode = new ConfigNode().AddNode("PROPELLANT");
@@ -366,7 +342,6 @@ namespace FNPlugin
 
             return PropellantNode;
         }
-
         private ConfigNode LoadResource(string akName, float akAmount, float akMax)
         {
            // Debug.Log("Resource: "+akName + " Added");
@@ -377,128 +352,98 @@ namespace FNPlugin
             return ResourceNode;
         }
 
+
         private void UpdateFromGUI(BaseField field, object oldFieldValueObj)
         {
             Debug.Log("[KSPI] - UpdateFromGUI is called with " + selectedFuel);
 
-            if (!_activeConfigurations.Any())
+            if (!FuelConfigurations.Any())
             {
                 Debug.Log("[KSPI] - UpdateFromGUI no FuelConfigurations found");
                 return;
             }
 
-            if (selectedFuel < _activeConfigurations.Count)
+            if (selectedFuel < FuelConfigurations.Count)
             {
                 Debug.Log("[KSPI] - UpdateFromGUI " + selectedFuel + " < orderedFuelGenerators.Count");
-                _currentActiveConfiguration = _activeConfigurations[selectedFuel];
+              //  FuelConfigurations[selectedFuel].Factor = ActiveConfiguration.Factor;
+                activeConfiguration = FuelConfigurations[selectedFuel];
             }
             else
             {
                 Debug.Log("[KSPI] - UpdateFromGUI " + selectedFuel + " >= orderedFuelGenerators.Count");
-                selectedFuel = _activeConfigurations.Count - 1;
-                _currentActiveConfiguration = _activeConfigurations.Last();
+                selectedFuel = FuelConfigurations.Count - 1;
+              //  FuelConfigurations[selectedFuel].Factor = ActiveConfiguration.Factor;
+                activeConfiguration = FuelConfigurations.Last();
             }
 
-            if (_currentActiveConfiguration == null)
+            if (activeConfiguration == null)
             {
                 Debug.Log("[KSPI] - UpdateFromGUI no activeConfiguration found");
                 return;
             }
         }
 
-        private void UpdateActiveConfiguration()
+        private void LoadInitialConfiguration()
         {
-            if (_currentActiveConfiguration == null)
-                return;
+            isLoaded = true;
 
-            string previousFuelConfigurationName = _currentActiveConfiguration.fuelConfigurationName;
+            //   var currentmaxIsp = maxIsp != 0 ? maxIsp : 1;
 
-            _activeConfigurations = ActiveConfigurations;
+            //Debug.Log("[KSPI] - UpdateFromGUI initialize initial fuel configuration with maxIsp target " + currentmaxIsp);
 
-            if (!_activeConfigurations.Any())
-                return;
-
-            chooseOptionFlight.options = _activeConfigurations.Select(m => m.fuelConfigurationName).ToArray();
-
-            var index = chooseOptionFlight.options.IndexOf(previousFuelConfigurationName);
-
-            if (index >= 0)
-                selectedFuel = index;
-
-            if (selectedFuel < _activeConfigurations.Count)
-                _currentActiveConfiguration = _activeConfigurations[selectedFuel];
-            else
+            // find maxIsp closes to target maxIsp
+            activeConfiguration = FuelConfigurations.FirstOrDefault();
+            selectedFuel = 0;
+            //     var lowestmaxIspDifference = Math.Abs(currentmaxIsp - activeConfiguration.maxIsp);
+            if (FuelConfigurations.Count > 1)
             {
-                selectedFuel = _activeConfigurations.Count - 1;
-                _currentActiveConfiguration = _activeConfigurations.Last();
-            }
-
-            if (_currentActiveConfiguration == null)
-                return;
-
-            if (previousFuelConfigurationName != _currentActiveConfiguration.fuelConfigurationName)
-            {
-                Debug.Log("[KSPI] - UpdateActiveConfiguration calls UpdateFuel");
-                UpdateFuel();
+                hasMultipleConfigurations = true;
             }
         }
 
         public override void OnUpdate()
         {
-            UpdateActiveConfiguration();
-
+            //    InitializeFuelSelector();
+            //  if (activeConfiguration == null ) InitializeFuelSelector();
             base.OnUpdate();
         }
-
-        private void LoadInitialConfiguration()
-        {
-            isLoaded = true;
-            // find maxIsp closes to target maxIsp
-            _currentActiveConfiguration = FuelConfigurations.FirstOrDefault();
-            selectedFuel = 0;
-
-            if (FuelConfigurations.Count > 1)
-                hasMultipleConfigurations = true;
-        }
-
         public override void OnStart(StartState state)
         {
             try
             {
-                Debug.Log("[KSPI] - Start State: " + state.ToString());
-                Debug.Log("[KSPI] - Already Launched: " + Launched);
+                Debug.Log("Start State: " + state.ToString());
+                Debug.Log("Already Launched: " + Launched);
                 CurState = state;
                 curEngineT = this.part.FindModuleImplementing<ModuleEngines>();
 
                 InitializeGUI();
 
+
                 if (state.ToString().Contains(StartState.Editor.ToString()))
                 {
-                    Debug.Log("[KSPI] - Editor");
+                    Debug.Log("Editor");
                     hideEmpty = false;
                     selectedTank = selectedFuel;
                     selectedTankName = FuelConfigurations[selectedFuel].ConfigName;
                     UpdateResources();
-                    Debug.Log("[KSPI] - OnStart calls UpdateFuel");
                     UpdateFuel(true);
                 }
                 else
                 {
+
+
                     hideEmpty = true;
                     if (state.ToString().Contains(StartState.PreLaunch.ToString())) // startstate normally == prelaunch,landed
                     {
-                        Debug.Log("[KSPI] - PreLaunch");
+                        Debug.Log("PreLaunch");
                         hideEmpty = true;
                         UpdateResources();
-                        //UpdateusefulConfigurations();
+                        UpdateusefulConfigurations();
                         InitializeFuelSelector();
-                        Debug.Log("[KSPI] - OnStart calls UpdateFuel");
                         UpdateFuel();
                     }
-                    else
-                    {
-                        Debug.Log("[KSPI] - No PreLaunch");
-                    }
+
                 }
                 Events["ShowFuels"].active = hideEmpty;
                 Events["HideFuels"].active = !hideEmpty;
@@ -507,38 +452,44 @@ namespace FNPlugin
             {
                 Debug.LogError("EngineECU2 OnStart eception: " + e.Message);
             }
-            
+
+
             base.OnStart(state);
         }
+
 
         public virtual void OnRescale(TweakScale.ScalingFactor akFactor)
         {
             scale = akFactor.absolute.linear;
         }
 
+
         public override void OnInitialize()
         {
+            //  InitializeFuelSelector();
             base.OnInitialize();
         }
+
         
         private IList<FuelConfiguration> usefulConfigurations;
         public IList<FuelConfiguration> UsefulConfigurations
         {
             get
             {
-                //if (usefulConfigurations == null)
-                usefulConfigurations = GetUsableConfigurations(FuelConfigurations);
                 if (usefulConfigurations == null)
                 {
-                    Debug.Log("[KSPI] - UsefulConfigurations Broke!");
+                    usefulConfigurations = GetUsableConfigurations(FuelConfigurations);
+                }
+                if (usefulConfigurations == null)
+                {
+                    Debug.Log("UsefulConfigurations Broke!");
                     return FuelConfigurations;
                 }
+
 
                 return usefulConfigurations;
             }
         }
-
-        
         public IList<FuelConfiguration> ActiveConfigurations
         {
             get
@@ -546,34 +497,34 @@ namespace FNPlugin
                 return hideEmpty ? UsefulConfigurations : FuelConfigurations;
             }
         }
+        public void UpdateusefulConfigurations()
+        {
+            IList<FuelConfiguration> akConfig = new List<FuelConfiguration>(usefulConfigurations);
+            usefulConfigurations = GetUsableConfigurations(FuelConfigurations);
+            if (akConfig.Equals(usefulConfigurations)) InitializeFuelSelector();
+        }
 
         public IList<FuelConfiguration> GetUsableConfigurations(IList<FuelConfiguration> akConfigs)
         {
             IList<FuelConfiguration> nwConfigs = new List<FuelConfiguration>();
             int I = 0;
-
             while (I < akConfigs.Count)
             {
-                var currentConfig = akConfigs[I];
-
-                if ((_currentActiveConfiguration != null && currentConfig.fuelConfigurationName == _currentActiveConfiguration.fuelConfigurationName) 
-                    || ConfigurationHasFuel(currentConfig))
+                if (ConfigurationHasFuel(akConfigs[I]))
                 {
-                    nwConfigs.Add(currentConfig);
-                    //Debug.Log("[KSPI] - Added fuel configuration: " + akConfigs[I].fuelConfigurationName);
+                    nwConfigs.Add(akConfigs[I]);
+                    Debug.Log("Added: " + akConfigs[I].fuelConfigurationName);
+
                 }
-                else 
-                    if (I < selectedFuel && I > 0) 
-                        selectedFuel--;
+                else if (I < selectedFuel && I > 0) selectedFuel--;
                 I++;
             }
 
             return nwConfigs;
         }
-
         public bool ConfigurationHasFuel(FuelConfiguration akConfig)
         {
-            bool result = true;
+            bool Test = true;
             int I = 0;
             while (I < akConfig.Fuels.Length)
             {
@@ -581,43 +532,39 @@ namespace FNPlugin
                 {
                     double akAmount = 0;
                     double akMaxAmount = 0;
-
-                    var akResource = PartResourceLibrary.Instance.GetDefinition(akConfig.Fuels[I]);
-
+                    PartResource akResource = this.part.Resources.Get(akConfig.Fuels[I]);
                     if (akResource != null)
                     {
-                        part.GetConnectedResourceTotals(akResource.id, out akAmount, out akMaxAmount);
-                        //Debug.Log("[KSPI] - Resource: " + akConfig.Fuels[I] + " has " + akAmount);
 
-                        if (akAmount == 0)
+                      //  vessel.UpdateResourceSets();
+                        part.GetConnectedResourceTotals(akResource.info.id, out akAmount, out akMaxAmount);
+                        Debug.Log("Resource: " + akConfig.Fuels[I] + " has " + akAmount);
+                        if (akAmount == 0 && akMaxAmount > 0)
                         {
-                            if (akMaxAmount > 0)
-                            {
-                                //Debug.Log("[KSPI] - Resource: " + akConfig.Fuels[I] + " is empty, but that is ok");
-                                result = false;
-                                I = akConfig.Fuels.Length;
-                            }
-                            else
-                            {
-                                //Debug.Log("[KSPI] - Resource: " + akConfig.Fuels[I] + " is missing, it will be removed from the list");
-                                result = false;
-                                I = akConfig.Fuels.Length;
-                            }
+                            Test = false;
+                            I = akConfig.Fuels.Length;
                         }
+                        /*       }
+                               else
+                               {
+                                   part.vessel.resour
+                               }*/
                     }
                     else
                     {
-                        //Debug.Log("[KSPI] - Resource: " + akConfig.Fuels[I] + " is not defined");
-                        result = false;
+                        Debug.Log("Resource: " + akConfig.Fuels[I] + " has " + 0);
+                        Test = false;
                         I = akConfig.Fuels.Length;
                     }
+
                 }
+
                 I++;
             }
-            return result;
+
+            return Test;
         }
     }
-
     class FuelConfiguration : PartModule, IRescalable<FuelConfiguration>
     {
         [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Fuel Configuration")]
@@ -632,14 +579,14 @@ namespace FNPlugin
         public string amount = "";
         [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Max Amount")]
         public string maxAmount = "";
-        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Thrust Mult")]
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Max ISP")]
+        public float maxIsp = 1;
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Max Thrust")]
+        public float maxThrust = 1;
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "ThrustMult")]
         public float thrustMult = 1;
-        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Power Mult")]
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Max Power Requirement")]
         public float powerMult = 1;
-        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Wasteheat Mult")]
-        public float wasteheatMult = 1;
-        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Has Isp Throttling")]
-        public bool hasIspThrottling = true;
         [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Atmopheric Curve")]
         public FloatCurve atmosphereCurve = new FloatCurve();
         [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "Ignore ISP")]
@@ -656,8 +603,10 @@ namespace FNPlugin
         [KSPField(isPersistant = true)]
         private string strMaxAmount="";
 
+
         private float[] akAmount = new float[0];
         private float[] akMaxAmount = new float[0];
+
         private string[] akFuels = new string[0];
         private bool[] akIgnoreIsp = new bool[0];
         private bool[] akIgnoreThrust = new bool[0];
@@ -671,16 +620,30 @@ namespace FNPlugin
                 return akConfigName;
             }
         }
-
         public string[] Fuels
         {
             get
             {
-                if (akFuels.Length == 0) 
-                    akFuels = Regex.Replace(fuels, " ", "").Split(',');
+                if (akFuels.Length == 0) akFuels = Regex.Replace(fuels, " ", "").Split(',');
                 return akFuels;
             }
         }
+
+        //public float T_thrustMult
+        //{
+        //    get
+        //    {
+        //        return thrustMult * (float)(Math.Pow(Scale, 2) == 0 ? 1 : Math.Pow(Scale, 2));
+        //    }
+        //}
+
+        //public float T_powerMult
+        //{
+        //    get
+        //    {
+        //        return powerMult * (float)(Math.Pow(Scale, 2) == 0 ? 1 : Math.Pow(Scale, 2));
+        //    }
+        //}
 
         public float[] Ratios
         {
@@ -696,18 +659,17 @@ namespace FNPlugin
         {
             get
             {
-                if (akAmount.Length == 0) 
-                    akAmount = StringToFloatArray(StrAmount);
+                if (akAmount.Length == 0) akAmount = StringToFloatArray(StrAmount);
                 return VolumeTweaked(akAmount);
             }
         }
+
 
         public float[] MaxAmount
         {
             get
             {
-                if (akMaxAmount.Length == 0) 
-                    akMaxAmount = StringToFloatArray(StrMaxAmount);
+                if (akMaxAmount.Length == 0) akMaxAmount = StringToFloatArray(StrMaxAmount);
                 return VolumeTweaked(akMaxAmount);
             }
 
@@ -721,7 +683,6 @@ namespace FNPlugin
                 return strMaxAmount;
             }
         }
-
         private string StrAmount
         {
             get
@@ -730,7 +691,6 @@ namespace FNPlugin
                 return strAmount;
             }
         }
-
         public bool[] IgnoreForIsp
         {
             get
@@ -739,8 +699,8 @@ namespace FNPlugin
                 else if (akIgnoreIsp.Length == 0) akIgnoreIsp = StringToBoolArray(ignoreForIsp);
                 return akIgnoreIsp;
             }
-        }
 
+        }
         public bool[] IgnoreForThrust
         {
             get
@@ -753,6 +713,7 @@ namespace FNPlugin
 
         private float[] VolumeTweaked(float[] akFloat)
         {
+          //  Debug.Log("akFloat.length: " + akFloat.Length);
             float[] akTweaked = new float[akFloat.Length];
 
             if (Scale != 1 && Scale > 0)
@@ -821,6 +782,7 @@ namespace FNPlugin
         }
         private void Refresh()
         {
+
             akConfigName = "";
             strMaxAmount = maxAmount;
             akMaxAmount = new float[0];
@@ -830,12 +792,19 @@ namespace FNPlugin
                 if (Amount[i] > MaxAmount[i]) Amount[i] = MaxAmount[i];
                 i++;
             }
-        }
 
+        }
         private void SaveAmount(ShipConstruct Ship)
         {
+
+          //  Debug.Log("Ship Modified!");
             try
             {
+
+
+                // Debug.Log("akAmont Length: " + akAmount.Length);
+                // Debug.Log("Amount Length: " + Amount.Length);
+               // Debug.Log("Part Resources Length: " + part.Resources.Count);
                 int i = 0;
                 if (part.Resources.Count == Amount.Length)
                     while (i < Amount.Length)
@@ -846,25 +815,29 @@ namespace FNPlugin
                     }
 
                 strAmount = FloatArrayToString(Amount);
+
             }
             catch (Exception e)
             {
                 Debug.LogError("Save Amount Error: " + e);
             }
-        }       
+        }
+       
 
         public virtual void OnRescale(ScalingFactor factor)
         {
+            
             Scale = factor.absolute.linear;
+          //  Debug.Log(fuelConfigurationName + " Rescaled to " + Scale);
         }
 
         public override void OnStart(StartState state)
         {
-            if (fuelConfigurationName != akConfigName || StrMaxAmount != maxAmount) 
-                Refresh();
+            if (fuelConfigurationName != akConfigName || StrMaxAmount != maxAmount) Refresh();
 
             GameEvents.onEditorShipModified.Add(SaveAmount);
             base.OnStart(state);
+
         }
 
     }

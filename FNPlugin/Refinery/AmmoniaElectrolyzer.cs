@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Linq;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class AmmoniaElectrolyzer : RefineryActivityBase, IRefineryActivity
     {
-        double _current_mass_rate;
-        double _ammonia_density;
-        double _nitrogen_density;
-        double _hydrogen_density;
+        protected double _current_mass_rate;
+        protected double _ammonia_density;
+        protected double _nitrogen_density;
+        protected double _hydrogen_density;
 
-        double _ammonia_consumption_mass_rate;
-        double _hydrogen_production_mass_rate;
-        double _nitrogen_production_mass_rate;
+        protected double _ammonia_consumption_mass_rate;
+        protected double _hydrogen_production_mass_rate;
+        protected double _nitrogen_production_mass_rate;
 
         public RefineryType RefineryType { get { return RefineryType.electrolysis; ; } }
 
@@ -76,15 +75,15 @@ namespace FNPlugin.Refinery
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Ammonia Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_ammonia_consumption_mass_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_ammonia_consumption_mass_rate * GameConstants.HOUR_SECONDS).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_hydrogen_production_mass_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_hydrogen_production_mass_rate * GameConstants.HOUR_SECONDS).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Nitrogen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_nitrogen_production_mass_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_nitrogen_production_mass_rate * GameConstants.HOUR_SECONDS).ToString("0.000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             var spare_capacity_nitrogen = _part.GetResourceSpareCapacity(InterstellarResourcesConfiguration.Instance.Nitrogen);

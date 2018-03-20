@@ -1,72 +1,70 @@
 ﻿using System;
+using System.Diagnostics.Eventing.Reader;
 
 namespace FNPlugin
 {
     [KSPModule("Inertial Fusion Reactor")]
     class InterstellarInertialConfinementReactor : InterstellarFusionReactor
     {
-        // Configs
-        [KSPField(guiActiveEditor = true)]
-        public string primaryInputResource = ResourceManager.FNRESOURCE_MEGAJOULES;
-        [KSPField(guiActiveEditor = true)]
-        public string secondaryInputResource = ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE;
-        [KSPField]
-        public double primaryInputMultiplier = 1;
-        [KSPField]
-        public double secondaryInputMultiplier = 1000;
-        [KSPField]
-        public bool canJumpstart = true;
-        [KSPField]
-        public bool usePowerManagerForPrimaryInputPower = true;
-        [KSPField]
-        public bool usePowerManagerForSecondaryInputPower = true;
-        [KSPField]
-        public bool canChargeJumpstart = true;
-        [KSPField]
-        public float startupPowerMultiplier = 1;
-        [KSPField]
-        public float startupCostGravityMultiplier = 0;
-        [KSPField]
-        public float startupMaximumGeforce = 10000;
-        [KSPField]
-        public float startupMinimumChargePercentage = 0;
-        [KSPField]
-        public double reactorRatioThreshold = 0.000005;
-        [KSPField]
-        public double minReactorRatio = 0;
-
-        // Persistant
-        //[KSPField(isPersistant = true, guiActive = true, guiName = "Throttling"), UI_Toggle(disabledText = "Off", enabledText = "On")]
-        //public bool autoThrottle = true;
         [KSPField(isPersistant = true)]
-        public double accumulatedElectricChargeInMW;
-        [KSPField(guiActiveEditor = true, guiName = "Power Affects Maintenance")]
-        public bool powerControlAffectsMaintenance = true;
-        [KSPField(isPersistant = true, guiName = "Startup"), UI_Toggle(disabledText = "Off", enabledText = "Charging")]
+        protected double accumulatedElectricChargeInMW;
+
+        // settings
+        [KSPField(guiActiveEditor = true)]
+        protected string primaryInputResource = FNResourceManager.FNRESOURCE_MEGAJOULES;
+        [KSPField(guiActiveEditor = true)]
+        protected string secondaryInputResource = FNResourceManager.STOCK_RESOURCE_ELECTRICCHARGE;
+        [KSPField]
+        protected double primaryInputMultiplier = 1;
+        [KSPField]
+        protected double secondaryInputMultiplier = 1000;
+        [KSPField]
+
+        protected bool canJumpstart = true;
+        [KSPField]
+        protected bool usePowerManagerForPrimaryInputPower = true;
+        [KSPField]
+        protected bool usePowerManagerForSecondaryInputPower = true;
+        [KSPField(isPersistant = false)]
+        protected bool canChargeJumpstart = true;
+        [KSPField(isPersistant = false)]
+        public float startupPowerMultiplier = 1;
+        [KSPField(isPersistant = false)]
+        public float startupCostGravityMultiplier = 0;
+        [KSPField(isPersistant = false)]
+        public float startupMaximumGeforce = 10000;
+        [KSPField(isPersistant = false)]
+        public float startupMinimumChargePercentage = 0;
+
+        [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Power Affects Maintenance")]
+        public bool powerControlAffectsMaintenance = false;
+
+        [KSPField(isPersistant = true, guiActiveEditor = false, guiActive = false, guiName = "Startup"), UI_Toggle(disabledText = "Off", enabledText = "Charging")]
         public bool isChargingForJumpstart;
+
+        [KSPField(isPersistant = false, guiActive = true, guiActiveEditor = false, guiUnits = "%", guiFormat = "F2", guiName = "Minimum Throtle")]
+        public double minimumThrottlePercentage;
+
         [KSPField(isPersistant = true, guiActive = true, guiName = "Max Secondary Power Usage"), UI_FloatRange(stepIncrement = 1f / 3f, maxValue = 100, minValue = 1)]
         public float maxSecondaryPowerUsage = 90;
 
-        // UI Display
-        [KSPField(guiActive = false, guiFormat = "F4", guiName = "Required Ratio")]
-        public double required_reactor_ratio;
-        [KSPField(guiActive = true, guiUnits = "%", guiFormat = "F2", guiName = "Minimum Throtle")]
-        public double minimumThrottlePercentage;
-        [KSPField(guiActive = true, guiName = "Charge")]
+        // UI
+        [KSPField(isPersistant = false, guiActive = true, guiName = "Charge")]
         public string accumulatedChargeStr = String.Empty;
-        [KSPField(guiActive = true, guiName = "Fusion Power Requirement")]
+        //[KSPField(isPersistant = false, guiActive = true, guiName = "Scalar")]
+        //public float animationScalar;
+        [KSPField(isPersistant = false, guiActive = true, guiName = "Power Requirment")]
         public double currentLaserPowerRequirements = 0;
 
-        double primaryPowerRequest;
-        double power_consumed;
-        bool fusion_alert;
-        int jumpstartPowerTime;
-        double framesPlasmaRatioIsGood;
+        // protected fields
+        protected double power_consumed;
+        protected bool fusion_alert;
+        protected int shutdown_c = 0;
+        protected int jumpstartPowerTime;
 
-        BaseField isChargingField;
-        BaseField accumulatedChargeStrField;
-        PartResourceDefinition primaryInputResourceDefinition;
-        PartResourceDefinition secondaryInputResourceDefinition;
+        protected BaseField isChargingField;
+
+        private PartResourceDefinition secondaryInputResourceDefinition;
 
         public override double PlasmaModifier
         {
@@ -76,7 +74,6 @@ namespace FNPlugin
         public override void OnStart(PartModule.StartState state)
         {
             isChargingField = Fields["isChargingForJumpstart"];
-            accumulatedChargeStrField = Fields["accumulatedChargeStr"];
 
             isChargingField.guiActiveEditor = false;
 
@@ -98,10 +95,6 @@ namespace FNPlugin
 
                 UnityEngine.Debug.LogWarning("[KSPI] - InterstellarInertialConfinementReactor.OnStart allowJumpStart");
             }
-
-            primaryInputResourceDefinition = !string.IsNullOrEmpty(primaryInputResource)
-                ? PartResourceLibrary.Instance.GetDefinition(primaryInputResource)
-                : null;
 
             secondaryInputResourceDefinition = !string.IsNullOrEmpty(secondaryInputResource)
                 ? PartResourceLibrary.Instance.GetDefinition(secondaryInputResource)
@@ -167,7 +160,7 @@ namespace FNPlugin
 
         public override void OnUpdate()
         {
-            if (!CheatOptions.InfiniteElectricity && !isChargingForJumpstart && !isSwappingFuelMode && getCurrentResourceDemand(ResourceManager.FNRESOURCE_MEGAJOULES) > getStableResourceSupply(ResourceManager.FNRESOURCE_MEGAJOULES) && getResourceBarRatio(ResourceManager.FNRESOURCE_MEGAJOULES) < 0.1 && IsEnabled && !fusion_alert)
+            if (!CheatOptions.InfiniteElectricity && !isChargingForJumpstart && !isSwappingFuelMode && getCurrentResourceDemand(FNResourceManager.FNRESOURCE_MEGAJOULES) > getStableResourceSupply(FNResourceManager.FNRESOURCE_MEGAJOULES) && getResourceBarRatio(FNResourceManager.FNRESOURCE_MEGAJOULES) < 0.1 && IsEnabled && !fusion_alert)
             {
                 ScreenMessages.PostScreenMessage("Warning: Fusion Reactor plasma heating cannot be guaranteed, reducing power requirements is recommended.", 10.0f, ScreenMessageStyle.UPPER_CENTER);
                 fusion_alert = true;
@@ -185,7 +178,7 @@ namespace FNPlugin
             else
                 accumulatedChargeStr = String.Empty;
 
-            accumulatedChargeStrField.guiActive = plasma_ratio < 1;
+            Fields["accumulatedChargeStr"].guiActive = plasma_ratio < 1;
 
             electricPowerMaintenance = PluginHelper.getFormattedPowerString(power_consumed) + " / " + PluginHelper.getFormattedPowerString(LaserPowerRequirements);
 
@@ -242,72 +235,72 @@ namespace FNPlugin
             ProcessCharging();
 
             // determine amount of power needed
-            required_reactor_ratio = Math.Max(minReactorRatio, reactor_power_ratio >= reactorRatioThreshold ? reactor_power_ratio : 0);
+            var powerRequested = LaserPowerRequirements * TimeWarp.fixedDeltaTime * Math.Max(reactor_power_ratio, 0.00001);
 
-            // quit if no fuel available
-            if (stored_fuel_ratio <= 0.01)
+            double powerReceived;
+            double primaryPowerReceived = 0;
+            double secondaryPowerReceived = 0;
+
+            var primaryPowerRequest = powerRequested * primaryInputMultiplier;
+            if (!CheatOptions.InfiniteElectricity && primaryPowerRequest != 0)
             {
-                primaryPowerRequest = 0;
-                plasma_ratio = 0;
-                return;
-            }
-
-            var powerRequested = LaserPowerRequirements * required_reactor_ratio;
-            primaryPowerRequest = powerRequested * primaryInputMultiplier;
-
-            double primaryPowerReceived;
-            if (!CheatOptions.InfiniteElectricity && primaryPowerRequest > 0)
-            {
-                primaryPowerReceived = usePowerManagerForPrimaryInputPower
-                    ? consumeFNResourcePerSecondBuffered(primaryPowerRequest, primaryInputResource, 0.1)
-                    : part.RequestResource(primaryInputResourceDefinition.id, primaryPowerRequest * timeWarpFixedDeltaTime, ResourceFlowMode.STAGE_PRIORITY_FLOW) / timeWarpFixedDeltaTime;
+                if (usePowerManagerForPrimaryInputPower)
+                    primaryPowerReceived = consumeFNResource(primaryPowerRequest, primaryInputResource);
+                else
+                    primaryPowerReceived = part.RequestResource(primaryInputResource, primaryPowerRequest, ResourceFlowMode.STAGE_PRIORITY_FLOW);
             }
             else
                 primaryPowerReceived = primaryPowerRequest;
 
-            // calculate effective primary power ratio
-            var powerReceived = primaryInputMultiplier > 0 ? primaryPowerReceived / primaryInputMultiplier : 0;
-            var powerRequirmentMetRatio = powerRequested > 0 ? powerReceived / powerRequested : 1;
+            powerReceived = primaryPowerReceived / primaryInputMultiplier;
 
-            // retrieve any shortage from secondary buffer
+
+            var powerRequirmentMetRatio = powerRequested > 0 ? powerReceived / powerRequested : 1; 
+
+            // retreive any shortage from buffer
             if (secondaryInputMultiplier > 0 && secondaryInputResourceDefinition != null && !CheatOptions.InfiniteElectricity && IsEnabled && powerReceived < powerRequested)
             {
+                // retreive megawatt ratio
+                var powerShortage = (1 - powerRequirmentMetRatio) * powerRequested;
+
                 double currentSecondaryRatio;
                 double currentSecondaryCapacity;
-                double currentSecondaryAmount;
 
                 if (usePowerManagerForSecondaryInputPower)
                 {
                     currentSecondaryRatio = getResourceBarRatio(secondaryInputResource);
                     currentSecondaryCapacity = getTotalResourceCapacity(secondaryInputResource);
-                    currentSecondaryAmount = currentSecondaryCapacity * currentSecondaryRatio;
                 }
                 else
                 {
-                    part.GetConnectedResourceTotals(secondaryInputResourceDefinition.id, out currentSecondaryAmount, out currentSecondaryCapacity);
-                    currentSecondaryRatio = currentSecondaryCapacity > 0 ? currentSecondaryAmount / currentSecondaryCapacity : 0;
+                    double currentAmount;
+                    part.GetConnectedResourceTotals(secondaryInputResourceDefinition.id, out currentAmount, out currentSecondaryCapacity);
+                    currentSecondaryRatio = currentSecondaryCapacity > 0 ? currentAmount / currentSecondaryCapacity : 0;
                 }
 
-                var secondaryPowerMaxRatio = ((double)(decimal)maxSecondaryPowerUsage) / 100d;
+                var secondaryPowerMaxRatio = maxSecondaryPowerUsage / 100;
 
                 // only use buffer if we have sufficient in storage
                 if (currentSecondaryRatio > secondaryPowerMaxRatio)
                 {
-                    // retreive megawatt ratio
-                    var powerShortage = (1 - powerRequirmentMetRatio) * powerRequested;
-                    var maxSecondaryConsumption = currentSecondaryAmount - (secondaryPowerMaxRatio * currentSecondaryCapacity);
-                    var requestedSecondaryPower = Math.Min(maxSecondaryConsumption, powerShortage * secondaryInputMultiplier * timeWarpFixedDeltaTime);
-                    var secondaryPowerReceived = part.RequestResource(secondaryInputResource, requestedSecondaryPower);
-                    powerReceived += secondaryPowerReceived / secondaryInputMultiplier / timeWarpFixedDeltaTime;
+                    var maxAvailableSecondaryPower = secondaryPowerMaxRatio * currentSecondaryCapacity;  
+
+                    var requestedSecondaryPower = Math.Min(currentSecondaryCapacity, (1 - powerRequirmentMetRatio) * powerRequested * secondaryInputMultiplier);
+
+                    secondaryPowerReceived = part.RequestResource(secondaryInputResource, requestedSecondaryPower);
+
+                    powerReceived += secondaryPowerReceived / secondaryInputMultiplier;
+
                     powerRequirmentMetRatio = powerRequested > 0 ? powerReceived / powerRequested : 1;
                 }
+
             }
 
             // adjust power to optimal power
             power_consumed = LaserPowerRequirements * powerRequirmentMetRatio;
 
             // verify if we need startup with accumulated power
-            if (canJumpstart && timeWarpFixedDeltaTime <= 0.1 && accumulatedElectricChargeInMW > 0 && power_consumed < StartupPower && (accumulatedElectricChargeInMW + power_consumed) >= StartupPower)
+            if (canJumpstart && TimeWarp.fixedDeltaTime <= 0.1 && accumulatedElectricChargeInMW > 0 && power_consumed < StartupPower && (accumulatedElectricChargeInMW + power_consumed) >= StartupPower)
             {
                 var shortage = StartupPower - power_consumed;
                 if (shortage <= accumulatedElectricChargeInMW)
@@ -358,10 +351,21 @@ namespace FNPlugin
                     framesPlasmaRatioIsGood -= treshhold;
                     plasma_ratio = 1;
                 }
+                else
+                {
+                    framesPlasmaRatioIsGood = 0;
+                    plasma_ratio = 0;
+
+                    if (primaryPowerReceived > 0.001)
+                        part.RequestResource(primaryInputResource, -primaryPowerReceived);
+
+                    if (secondaryPowerReceived > 0.001)
+                        part.RequestResource(secondaryInputResource, -secondaryPowerReceived);
+                }
             }
         }
 
-        private void UpdateLoopingAnimation(double ratio)
+        public void UpdateLoopingAnimation(double ratio)
         {
             if (loopingAnimation == null)
                 return;
@@ -373,7 +377,7 @@ namespace FNPlugin
             {
                 if (!initialized || shutdownAnimation == null || loopingAnimation.IsMoving()) return;
 
-                if (!(animationStarted >= 0))
+                if (animationStarted == 0)
                 {
                     animationStarted = Planetarium.GetUniversalTime();
                     shutdownAnimation.ToggleAction(new KSPActionParam(KSPActionGroup.Custom01, KSPActionType.Activate));
@@ -411,7 +415,7 @@ namespace FNPlugin
 
                 var returnedMegaJoulePower = returnedPrimaryPower / primaryInputMultiplier;
 
-                if (startupMinimumChargePercentage <= 0 || returnedMegaJoulePower / timeWarpFixedDeltaTime > (startupMinimumChargePercentage * StartupPower))
+                if (startupMinimumChargePercentage == 0 || returnedMegaJoulePower / TimeWarp.fixedDeltaTime > (startupMinimumChargePercentage * StartupPower))
                 {
                     accumulatedElectricChargeInMW += returnedMegaJoulePower;
                 }
@@ -419,7 +423,7 @@ namespace FNPlugin
 
             // secondry try to charge from secondary Power Storage
             neededPower = StartupPower - accumulatedElectricChargeInMW;
-            if (secondaryInputMultiplier > 0 && neededPower > 0 && startupMinimumChargePercentage <= 0)
+            if (neededPower > 0 && startupMinimumChargePercentage == 0)
             {
                 var requestedSecondaryPower = neededPower * secondaryInputMultiplier;
 
@@ -430,5 +434,13 @@ namespace FNPlugin
                 accumulatedElectricChargeInMW += secondaryPowerReceived / secondaryInputMultiplier;
             }
         }
+
+        private double framesPlasmaRatioIsGood;
+
+        public override int getPowerPriority()
+        {
+            return 1;
+        }
+
     }
 }

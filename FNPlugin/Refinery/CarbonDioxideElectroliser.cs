@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
@@ -10,28 +11,28 @@ namespace FNPlugin.Refinery
         const double carbonMonoxideMassByFraction = 28.010 / (28.010 + 15.999);
         const double oxygenMassByFraction = 1 - carbonMonoxideMassByFraction;
 
-        double _fixedMaxConsumptionDioxideRate;
-        double _consumptionStorageRatio;
+        protected double _fixedMaxConsumptionDioxideRate;
+        protected double _consumptionStorageRatio;
 
-        double _dioxide_consumption_rate;
-        double _monoxide_production_rate;
-        double _oxygen_production_rate;
+        protected double _dioxide_consumption_rate;
+        protected double _monoxide_production_rate;
+        protected double _oxygen_production_rate;
 
-        string _dioxideResourceName;
-        string _oxygenResourceName;
-        string _monoxideResourceName;
+        protected string _dioxideResourceName;
+        protected string _oxygenResourceName;
+        protected string _monoxideResourceName;
 
-        double _dioxide_density;
-        double _oxygen_density;
-        double _monoxide_density;
+        protected double _dioxide_density;
+        protected double _oxygen_density;
+        protected double _monoxide_density;
 
-        double _availableDioxideMass;
-        double _spareRoomOxygenMass;
-        double _spareRoomMonoxideMass;
+        protected double _availableDioxideMass;
+        protected double _spareRoomOxygenMass;
+        protected double _spareRoomMonoxideMass;
 
-        double _maxCapacityDioxideMass;
-        double _maxCapacityMonoxideMass;
-        double _maxCapacityOxygenMass;
+        protected double _maxCapacityDioxideMass;
+        protected double _maxCapacityMonoxideMass;
+        protected double _maxCapacityOxygenMass;
 
         public RefineryType RefineryType { get { return RefineryType.electrolysis; } }
 
@@ -131,7 +132,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("CarbonDioxide Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_dioxide_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_dioxide_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -141,7 +142,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("CarbonMonoxide Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_monoxide_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_monoxide_production_rate * GameConstants.HOUR_SECONDS).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -151,7 +152,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Oxygen Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_oxygen_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_oxygen_production_rate * GameConstants.HOUR_SECONDS).ToString("0.0000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 

@@ -1,37 +1,38 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using FNPlugin.Extensions;
 
 namespace FNPlugin.Refinery
 {
     class AnthraquinoneProcessor : RefineryActivityBase, IRefineryActivity
     {
-        double _fixedConsumptionRate;
-        double _consumptionRate;
+        protected double _fixedConsumptionRate;
+        protected double _consumptionRate;
 
-		double _hydrogen_density;
-		double _oxygen_density;
-        double _hydrogen_peroxide_density;
+		protected double _hydrogen_density;
+		protected double _oxygen_density;
+        protected double _hydrogen_peroxide_density;
 
-        string _oxygenResourceName;
-        string _hydrogenResourceName;
-        string _hydrogenPeroxideResourceName;
+        private string _oxygenResourceName;
+        private string _hydrogenResourceName;
+        private string _hydrogenPeroxideResourceName;
 
-        double _maxCapacityOxygenMass;
-        double _maxCapacityHydrogenMass;
-        double _maxCapacityPeroxideMass;
+        protected double _maxCapacityOxygenMass;
+        protected double _maxCapacityHydrogenMass;
+        protected double _maxCapacityPeroxideMass;
 
-        double _availableOxygenMass;
-        double _availableHydrogenMass;
-        double _spareRoomHydrogenPeroxideMass;
+        private double _availableOxygenMass;
+        private double _availableHydrogenMass;
+        private double _spareRoomHydrogenPeroxideMass;
 
-		double _hydrogen_consumption_rate;
-		double _oxygen_consumption_rate;
-        double _hydrogen_peroxide_production_rate;
+		protected double _hydrogen_consumption_rate;
+		protected double _oxygen_consumption_rate;
+        protected double _hydrogen_peroxide_production_rate;
 
-		double _hydrogenMassByFraction = (1.0079 * 2)/ 34.01468;
-        double _oxygenMassByFraction = 1 - ((1.0079 * 2) / 34.01468);
+		protected double _hydrogenMassByFraction = (1.0079 * 2)/ 34.01468;
+        protected double _oxygenMassByFraction = 1 - ((1.0079 * 2) / 34.01468);
 
         public RefineryType RefineryType { get { return RefineryType.synthesize; } }
 
@@ -131,7 +132,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Overal Consumption", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label(((_consumptionRate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label(((_consumptionRate * GameConstants.HOUR_SECONDS).ToString("0.00000")) + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -141,7 +142,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_hydrogen_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_hydrogen_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -151,7 +152,7 @@ namespace FNPlugin.Refinery
 
 			GUILayout.BeginHorizontal();
             GUILayout.Label("Oxygen Consumption Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_oxygen_consumption_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_oxygen_consumption_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
 			GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -161,7 +162,7 @@ namespace FNPlugin.Refinery
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Hydrogen Peroxide Production Rate", _bold_label, GUILayout.Width(labelWidth));
-            GUILayout.Label((_hydrogen_peroxide_production_rate * GameConstants.SECONDS_IN_HOUR).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
+            GUILayout.Label((_hydrogen_peroxide_production_rate * GameConstants.HOUR_SECONDS).ToString("0.00000") + " mT/hour", _value_label, GUILayout.Width(valueWidth));
             GUILayout.EndHorizontal();
         }
 

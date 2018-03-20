@@ -5,7 +5,7 @@ using FNPlugin.Propulsion;
 
 namespace FNPlugin
 {
-    class FNThermalHeatExchanger : ResourceSuppliableModule, IPowerSource
+    class FNThermalHeatExchanger : FNResourceSuppliableModule, IPowerSource
     {
         //Persistent True
         [KSPField(isPersistant = true)]
@@ -13,7 +13,7 @@ namespace FNPlugin
 
         //Persistent False
         [KSPField(isPersistant = false)]
-		public double radius = 2.5;
+		public double radius;
         [KSPField(isPersistant = false)]
         public double heatTransportationEfficiency = 0.7f;
         [KSPField(isPersistant = false)]
@@ -61,9 +61,9 @@ namespace FNPlugin
 
         public double EfficencyConnectedChargedEnergyGenerator { get { return 0; } }
 
-        public void NotifyActiveThermalEnergyGenerator(double efficency, double power_ratio) { currentIsThermalEnergyGeneratorActive = efficency; }
+        public void NotifyActiveThermalEnergyGenerator(double efficency, double power_ratio, ElectricGeneratorType generatorType) { currentIsThermalEnergyGeneratorActive = efficency; }
 
-        public void NotifyActiveChargedEnergyGenerator(double efficency, double power_ratio) { }
+        public void NotifyActiveChargedEnergyGenerator(double efficency, double power_ratio, ElectricGeneratorType generatorType) { }
 
         public bool IsThermalSource { get { return true; } }
 
@@ -206,7 +206,7 @@ namespace FNPlugin
         public void setupThermalPower()
         {
             activeExchangers = FNThermalHeatExchanger.getActiveExchangersForVessel(vessel);
-            _thermalpower = (float)getStableResourceSupply(ResourceManager.FNRESOURCE_THERMALPOWER) / activeExchangers;
+            _thermalpower = (float)getStableResourceSupply(FNResourceManager.FNRESOURCE_THERMALPOWER) / activeExchangers;
         }
 
         public override void OnStart(PartModule.StartState state)
@@ -215,7 +215,7 @@ namespace FNPlugin
             Actions["DeactivateHeatExchangerAction"].guiName = Events["DeactivateHeatExchanger"].guiName = String.Format("Deactivate Heat Exchanger");
             Actions["ToggleHeatExchangerAction"].guiName = String.Format("Toggle Heat Exchanger");
 
-            String[] resources_to_supply = { ResourceManager.FNRESOURCE_THERMALPOWER };
+            String[] resources_to_supply = { FNResourceManager.FNRESOURCE_THERMALPOWER };
             this.resources_to_supply = resources_to_supply;
 
             base.OnStart(state);
@@ -253,9 +253,9 @@ namespace FNPlugin
             return _thermalpower;
         }
 
-        public double Radius
+        public double GetRadius()
         {
-            get { return radius; }
+            return radius;
         }
 
         public bool isActive()
